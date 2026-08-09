@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#4A9EF6" />
+<title>JodWhite</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Kanit:wght@600;700&display=swap" rel="stylesheet" />
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JodWhite v2 — แอปบันทึกงานส่วนตัว (SaaS, multi-tenant)
+     v2: เตือนฝั่งเซิร์ฟเวอร์ · รูปบน Storage · ออฟไลน์ · ค้นหา · ถังขยะ · TH/EN
+     ═══════════════════════════════════════════════════════════════ -->
+
+<style>
+  :root{
+    --brand:#4A9EF6; --brand-dark:#2B7FD4;
+    --brand-tint:#E7F1FE; --brand-tint2:#F2F8FF;
+    --ink:#16233A; --muted:#5E6E85; --faint:#8E9DB2;
+    --bg:#F5F8FD; --card:#FFFFFF;
+    --line:#E3EAF4; --line-strong:#CBD7E7;
+    --danger:#D6453F; --danger-tint:#FBEAEA;
+    --amber:#D69A00; --amber-tint:#FBF2DC;
+    --pending:#8496AC; --pending-tint:#EDF1F7;
+    --shadow:0 1px 2px rgba(22,35,58,.06), 0 4px 16px rgba(22,35,58,.05);
+    --shadow-lg:0 8px 30px rgba(22,35,58,.14);
+    --safe-b:env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"IBM Plex Sans Thai",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--ink);
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wm,.num{font-family:"Kanit",sans-serif;letter-spacing:.2px}
+  h1,h2,h3{font-family:inherit;font-weight:600;letter-spacing:-.1px}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select,textarea{font-family:inherit;font-size:15px}
+  a{color:var(--brand-dark)}
+  .hidden{display:none !important}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 18px;border-radius:12px;font-weight:600;font-size:15px;
+    transition:transform .05s ease, background .15s ease}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:var(--brand);color:#fff;box-shadow:0 2px 8px rgba(74,158,246,.30)}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:var(--brand-tint);color:var(--brand-dark)}
+  .btn-line{background:#EFF4FA;color:var(--ink);border:1px solid var(--line)}
+  .btn-danger{background:var(--danger-tint);color:var(--danger)}
+  .btn-block{display:flex;width:100%}
+  .btn:disabled{opacity:.5;pointer-events:none}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  /* ── Language toggle ── */
+  .lang-tog{display:inline-flex;background:var(--brand-tint);border-radius:20px;padding:2px;gap:1px}
+  .lang-tog button{padding:4px 11px;border-radius:18px;font-size:12px;font-weight:700;color:var(--muted)}
+  .lang-tog button.active{background:#fff;color:var(--brand-dark);box-shadow:var(--shadow)}
+
+  /* ── Auth ── */
+  #auth{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(1200px 500px at 50% -10%, #DCEBFD 0%, transparent 60%), var(--bg)}
+  .auth-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);
+    border-radius:22px;padding:28px 26px;box-shadow:var(--shadow-lg)}
+  .auth-top{display:flex;justify-content:flex-end;margin-bottom:6px}
+  .brand{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:20px}
+  .logo-mark{width:56px;height:56px;border-radius:16px;
+    background:linear-gradient(145deg,var(--brand),var(--brand-dark));
+    display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(74,158,246,.34)}
+  .logo-mark svg{width:32px;height:32px}
+  .wm{font-size:27px;font-weight:700}
+  .wm .jod{color:var(--brand)} .wm .white{color:var(--ink)}
+  .tagline{color:var(--muted);font-size:13.5px;text-align:center}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .input{width:100%;padding:12px 13px;border:1.5px solid var(--line-strong);border-radius:11px;
+    background:#fff;color:var(--ink);transition:border .15s, box-shadow .15s}
+  .input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(74,158,246,.16)}
+  textarea.input{resize:vertical;min-height:76px}
+  .auth-switch{text-align:center;margin-top:16px;font-size:14px;color:var(--muted)}
+  .auth-switch button{color:var(--brand-dark);font-weight:600;padding:2px 4px}
+  .auth-msg{font-size:13.5px;padding:10px 12px;border-radius:10px;margin-bottom:13px;display:none}
+  .auth-msg.err{display:block;background:var(--danger-tint);color:var(--danger)}
+  .auth-msg.ok{display:block;background:var(--brand-tint);color:var(--brand-dark)}
+  .link-btn{color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
+  .legal{text-align:center;font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.6}
+
+  /* ── Shell ── */
+  #app{min-height:100dvh;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(247,249,243,.88);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;gap:10px}
+  .topbar .wm{font-size:20px}
+  .topbar .logo-mark{width:34px;height:34px;border-radius:10px;box-shadow:none}
+  .topbar .logo-mark svg{width:20px;height:20px}
+  .spacer{flex:1}
+  .icon-btn{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+    justify-content:center;color:var(--muted)}
+  .icon-btn:hover{background:var(--brand-tint);color:var(--brand-dark)}
+  .icon-btn svg{width:21px;height:21px}
+  .profile-switch{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:20px;
+    background:var(--brand-tint);color:var(--brand-dark);font-weight:600;font-size:13.5px;max-width:170px}
+  .profile-switch .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);flex:none}
+  .profile-switch span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .profile-switch svg{width:15px;height:15px;flex:none}
+
+  main{flex:1;padding:14px 16px 108px}
+  .screen{display:none;animation:fade .22s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+
+  .offline-chip{display:none;align-items:center;gap:7px;background:var(--amber-tint);
+    border:1px solid #EBD79A;color:#8A6A00;padding:8px 12px;border-radius:11px;
+    font-size:12.5px;margin-bottom:12px}
+  .offline-chip.show{display:flex}
+  .verify-banner{display:none;align-items:center;gap:10px;background:var(--amber-tint);
+    border:1px solid #EBD79A;color:#8A6A00;padding:10px 13px;border-radius:12px;font-size:13px;margin-bottom:14px}
+  .verify-banner button{color:#8A6A00;font-weight:700;text-decoration:underline;font-size:13px}
+
+  .screen-head{display:flex;align-items:baseline;gap:10px;margin:2px 0 12px}
+  .screen-head h2{font-size:21px;margin:0}
+  .screen-head .sub{color:var(--muted);font-size:13px}
+
+  /* ── Quick add + search ── */
+  .quickadd{display:flex;gap:8px;margin-bottom:12px}
+  .quickadd input{flex:1;padding:12px 14px;border:1.5px solid var(--line-strong);border-radius:12px;background:#fff}
+  .quickadd input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(74,158,246,.16)}
+  .quickadd button{width:46px;border-radius:12px;background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:none}
+  .quickadd button svg{width:21px;height:21px}
+  .searchbox{position:relative;margin-bottom:14px}
+  .searchbox input{width:100%;padding:11px 38px 11px 38px;border:1.5px solid var(--line);
+    border-radius:12px;background:#fff}
+  .searchbox input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(74,158,246,.16)}
+  .searchbox .s-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:17px;height:17px;color:var(--faint);pointer-events:none}
+  .searchbox .s-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    width:26px;height:26px;border-radius:50%;display:none;align-items:center;justify-content:center;
+    background:var(--line);color:var(--muted)}
+  .searchbox .s-clear.show{display:flex}
+
+  /* ── Task card ── */
+  .task{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:13px 14px;margin-bottom:11px;box-shadow:var(--shadow);transition:transform .06s}
+  .task:active{transform:scale(.994)}
+  .task.done{opacity:.62}
+  .task.overdue{border-color:#F0C9C7}
+  .task-top{display:flex;align-items:flex-start;gap:11px}
+  .status-pill{flex:none;margin-top:2px}
+  .status-pill button{width:26px;height:26px;border-radius:50%;border:2px solid var(--pending);
+    display:flex;align-items:center;justify-content:center;background:#fff;transition:all .15s}
+  .status-pill button svg{width:15px;height:15px}
+  .status-pill.s-doing button{border-color:var(--amber);background:var(--amber)}
+  .status-pill.s-done button{border-color:var(--brand);background:var(--brand)}
+  .task-body{flex:1;min-width:0}
+  .task-title{font-weight:600;font-size:15.5px;word-break:break-word}
+  .task.done .task-title{text-decoration:line-through;text-decoration-color:var(--faint)}
+  .task-meta{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+  .task-meta .m{display:inline-flex;align-items:center;gap:4px}
+  .task-meta svg{width:13px;height:13px;opacity:.8}
+  .task-meta .due.late{color:var(--danger);font-weight:600}
+  .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;
+    background:var(--brand-tint);color:var(--brand-dark);margin-top:7px}
+  .task-detail-txt{font-size:13px;color:var(--muted);margin-top:5px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .task-thumb{width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-top:9px}
+  .sub-prog{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:6px}
+
+  .empty{text-align:center;padding:44px 20px;color:var(--muted)}
+  .empty .em-ic{width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:var(--brand-tint);
+    display:flex;align-items:center;justify-content:center}
+  .empty .em-ic svg{width:28px;height:28px;color:var(--brand)}
+  .empty h3{margin:0 0 4px;font-size:16px;color:var(--ink)}
+  .empty p{margin:0;font-size:13.5px}
+  .day-label{font-size:12px;font-weight:700;color:var(--faint);text-transform:uppercase;
+    letter-spacing:.6px;margin:16px 2px 8px}
+
+  /* ── FAB + nav ── */
+  .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + var(--safe-b));
+    z-index:40;width:56px;height:56px;border-radius:50%;background:var(--brand);color:#fff;
+    box-shadow:0 6px 20px rgba(74,158,246,.42);display:flex;align-items:center;justify-content:center}
+  #app.stack-open .fab,#app.stack-open .bottomnav{display:none}
+  .fab:active{transform:translateX(-50%) scale(.92)}
+  .fab svg{width:28px;height:28px}
+  @media(min-width:520px){.fab{left:auto;right:calc(50% - 380px + 20px);transform:none}
+    .fab:active{transform:scale(.92)}}
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:35;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);padding:6px 0 var(--safe-b);display:flex;justify-content:center}
+  .nav-inner{display:flex;justify-content:space-around;width:100%;max-width:760px}
+  .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 6px;
+    color:var(--faint);font-size:10.5px;font-weight:600}
+  .navbtn svg{width:23px;height:23px}
+  .navbtn.active{color:var(--brand)}
+  .navbtn.active svg{stroke-width:2.4}
+
+  /* ── Stack ── */
+  .stack{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);overscroll-behavior:contain}
+  .stack.open{transform:none}
+  .stack-head{position:sticky;top:0;background:rgba(247,249,243,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);padding:11px 12px;display:flex;align-items:center;gap:8px;z-index:2}
+  .stack-head h2{font-size:17px;margin:0;flex:1}
+  .stack-body{flex:1;overflow-y:auto;padding:16px;max-width:760px;width:100%;margin:0 auto}
+  .stack-foot{border-top:1px solid var(--line);padding:12px 16px calc(12px + var(--safe-b));
+    background:var(--card);display:flex;gap:10px;max-width:760px;width:100%;margin:0 auto}
+
+  .mic-wrap{position:relative}
+  .mic-btn{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:10px;
+    background:var(--brand-tint);color:var(--brand-dark);display:flex;align-items:center;justify-content:center}
+  .mic-btn svg{width:19px;height:19px}
+  .mic-btn.rec{background:var(--danger);color:#fff;animation:pulse 1.1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(214,69,63,.4)}50%{box-shadow:0 0 0 7px rgba(214,69,63,0)}}
+  .mic-hint{font-size:12px;color:var(--faint);margin-top:5px}
+
+  .seg{display:flex;background:var(--brand-tint);border-radius:12px;padding:3px;gap:3px}
+  .seg button{flex:1;padding:8px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted)}
+  .seg button.active{background:#fff;color:var(--brand-dark);box-shadow:var(--shadow)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chips button{padding:8px 13px;border-radius:20px;border:1.5px solid var(--line-strong);
+    background:#fff;font-size:13px;font-weight:500;color:var(--muted)}
+  .chips button.active{border-color:var(--brand);background:var(--brand-tint);color:var(--brand-dark)}
+
+  .attach-thumb{margin-top:8px;position:relative;display:inline-block}
+  .attach-thumb img{max-width:140px;max-height:140px;border-radius:12px;border:1px solid var(--line)}
+  .attach-thumb .rm{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;
+    background:var(--danger);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+  .upbar{height:5px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:8px;display:none}
+  .upbar.show{display:block}
+  .upbar i{display:block;height:100%;background:var(--brand);width:0;transition:width .2s}
+
+  /* subtasks */
+  .sub-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .sub-row:last-child{border-bottom:none}
+  .sub-row .sbox{width:22px;height:22px;border-radius:6px;border:2px solid var(--pending);flex:none;
+    display:flex;align-items:center;justify-content:center;background:#fff}
+  .sub-row .sbox.on{background:var(--brand);border-color:var(--brand)}
+  .sub-row .sbox svg{width:13px;height:13px}
+  .sub-row input{flex:1;border:none;background:transparent;padding:2px 0;font-size:14px}
+  .sub-row input:focus{outline:none}
+  .sub-row input.on{text-decoration:line-through;color:var(--faint)}
+  .sub-row .sdel{color:var(--faint);width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+
+  /* ── Calendar ── */
+  .cal-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .cal-head h3{margin:0;font-size:16px;flex:1;text-align:center}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--faint);padding:4px 0}
+  .cal-cell{aspect-ratio:1;border-radius:11px;background:var(--card);border:1px solid var(--line);
+    padding:5px;display:flex;flex-direction:column;font-size:12px;cursor:pointer;overflow:hidden}
+  .cal-cell.other{opacity:.38}
+  .cal-cell.today{border-color:var(--brand);background:var(--brand-tint2)}
+  .cal-cell .dnum{font-weight:600}
+  .cal-cell.today .dnum{color:var(--brand-dark)}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:auto}
+  .cal-dots i{width:6px;height:6px;border-radius:50%}
+  .dot-pending{background:var(--pending)} .dot-doing{background:var(--amber)}
+  .dot-done{background:var(--brand)} .dot-late{background:var(--danger)}
+  .cal-week{display:flex;flex-direction:column;gap:8px}
+  .cal-week-day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .cal-week-day.today{border-color:var(--brand)}
+  .cal-week-day .wd{font-weight:700;font-size:13px;margin-bottom:6px}
+  .cal-week-day.today .wd{color:var(--brand-dark)}
+  .mini-task{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;
+    border-top:1px dashed var(--line);cursor:pointer}
+  .mini-task:first-of-type{border-top:none}
+  .mini-task i{width:8px;height:8px;border-radius:50%;flex:none}
+
+  /* ── Dashboard ── */
+  .dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .dcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+  .dcard.late{border-color:#F0C9C7;background:#FDF4F3}
+  .dcard .num{font-size:28px;font-weight:700;line-height:1}
+  .dcard.late .num{color:var(--danger)}
+  .dcard.done .num{color:var(--brand)}
+  .dcard .lbl{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:14px}
+  .panel h3{margin:0 0 12px;font-size:15px}
+  .bd-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
+  .bd-row .bd-name{width:92px;flex:none;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bd-bar{flex:1;height:9px;border-radius:6px;background:var(--brand-tint);overflow:hidden}
+  .bd-bar i{display:block;height:100%;border-radius:6px;background:var(--brand)}
+  .bd-row .bd-val{width:30px;text-align:right;font-weight:600;color:var(--muted)}
+
+  /* ── Settings ── */
+  .set-group{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+  .set-group .gh{padding:12px 15px 4px;font-size:12px;font-weight:700;color:var(--faint);
+    text-transform:uppercase;letter-spacing:.4px}
+  .set-row{display:flex;align-items:center;gap:12px;padding:13px 15px;border-top:1px solid var(--line)}
+  .set-row:first-of-type{border-top:none}
+  .set-row .sr-main{flex:1;min-width:0}
+  .set-row .sr-title{font-weight:500;font-size:14.5px}
+  .set-row .sr-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .plan-badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700}
+  .plan-free{background:var(--pending-tint);color:var(--muted)}
+  .plan-premium{background:linear-gradient(135deg,#4A9EF6,#1F63B8);color:#fff}
+  .profile-item{display:flex;align-items:center;gap:11px;padding:12px 15px;
+    border-top:1px solid var(--line);cursor:pointer}
+  .profile-item:first-of-type{border-top:none}
+  .profile-item .pi-dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .profile-item .pi-name{flex:1;font-weight:500}
+  .profile-item .pi-cur{font-size:11.5px;color:var(--brand);font-weight:700}
+  .quota-bar{height:7px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:8px}
+  .quota-bar i{display:block;height:100%;background:var(--brand)}
+  .quota-bar i.warn{background:var(--amber)} .quota-bar i.full{background:var(--danger)}
+
+  /* ── Sheet / toast ── */
+  .sheet-backdrop{position:fixed;inset:0;z-index:70;background:rgba(22,35,58,.42);
+    display:none;align-items:flex-end;justify-content:center}
+  .sheet-backdrop.open{display:flex;animation:fade .18s ease}
+  .sheet{background:var(--card);width:100%;max-width:760px;border-radius:22px 22px 0 0;
+    padding:20px 18px calc(20px + var(--safe-b));animation:up .26s cubic-bezier(.4,0,.2,1);
+    max-height:88dvh;overflow-y:auto}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h3{margin:0 0 4px;font-size:18px}
+  .sheet .sh-sub{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+  .sheet-grip{width:38px;height:4px;border-radius:3px;background:var(--line-strong);margin:0 auto 14px}
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + var(--safe-b));
+    z-index:90;background:var(--ink);color:#fff;padding:11px 16px;border-radius:24px;
+    font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;
+    transition:opacity .2s;max-width:90%;display:flex;align-items:center;gap:12px}
+  #toast.show{opacity:1;pointer-events:auto}
+  #toast.err{background:var(--danger)}
+  #toast .undo{color:#A9D4FF;font-weight:700;text-decoration:underline;white-space:nowrap}
+  #toast.err .undo{color:#fff}
+
+  .divider{height:1px;background:var(--line);margin:16px 0}
+  .field-inline{display:flex;gap:10px}
+  .field-inline > *{flex:1;min-width:0}
+  /* จอแคบ: ช่องวันที่/เวลาเรียงลงมา ไม่ให้ตัวเลขถูกตัด */
+  @media(max-width:430px){
+    .field-inline{flex-direction:column;gap:0}
+    .field-inline > .field{margin-bottom:13px}
+    .field-inline > .btn{margin-bottom:8px}
+  }
+  .center-load{min-height:100dvh;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px}
+  .spinner{width:34px;height:34px;border:3px solid var(--brand-tint);border-top-color:var(--brand);
+    border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .config-warn{background:var(--danger-tint);border:1px solid #F0C9C7;color:var(--danger);
+    padding:14px;border-radius:12px;font-size:13px;margin:16px;line-height:1.6}
+  .config-warn code{background:#fff;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<div id="loading" class="center-load">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:14px">JodWhite…</div>
+</div>
+
+<div id="configWarn" class="config-warn hidden">
+  ⚠️ ยังไม่ได้ตั้งค่า <code>FIREBASE_CONFIG</code> — เปิด <code>index.html</code> แล้ววาง config จาก Firebase Console ก่อนใช้งาน<br>
+  <span style="opacity:.85">Firebase config not set. Paste it into <code>index.html</code> first.</span>
+</div>
+
+<!-- ═══════ AUTH ═══════ -->
+<div id="auth" class="hidden">
+  <div class="auth-card">
+    <div class="auth-top">
+      <div class="lang-tog"><button data-lang="th">ไทย</button><button data-lang="en">EN</button></div>
+    </div>
+    <div class="brand">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h9M4 11h7M4 16h5"/><path d="m12.5 15.5 3 3 6-7"/></svg>
+      </div>
+      <div class="wm"><span class="jod">Jod</span><span class="white">White</span></div>
+      <div class="tagline" data-i18n="tagline"></div>
+    </div>
+    <div id="authMsg" class="auth-msg"></div>
+    <div class="field" id="nameField" style="display:none">
+      <label data-i18n="auth.name"></label>
+      <input id="inName" class="input" type="text" autocomplete="name" data-i18n-ph="auth.namePh" />
+    </div>
+    <div class="field">
+      <label data-i18n="auth.email"></label>
+      <input id="inEmail" class="input" type="email" placeholder="you@email.com" autocomplete="email" />
+    </div>
+    <div class="field">
+      <label data-i18n="auth.password"></label>
+      <input id="inPass" class="input" type="password" autocomplete="current-password" data-i18n-ph="auth.passPh" />
+    </div>
+    <button id="btnAuth" class="btn btn-primary btn-block" style="margin-top:6px"></button>
+    <div style="text-align:center;margin-top:10px">
+      <button id="btnForgot" class="link-btn" data-i18n="auth.forgot"></button>
+    </div>
+    <div class="auth-switch"><span id="switchText"></span><button id="btnSwitch"></button></div>
+    <div class="legal" data-i18n="auth.legal"></div>
+  </div>
+</div>
+
+<!-- ═══════ APP ═══════ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6h9M4 11h7M4 16h5"/><path d="m12.5 15.5 3 3 6-7"/></svg>
+    </div>
+    <div class="wm"><span class="jod">Jod</span><span class="white">White</span></div>
+    <div class="spacer"></div>
+    <button id="btnProfileSwitch" class="profile-switch">
+      <span class="dot"></span><span id="curProfileName"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <main>
+    <div id="offlineChip" class="offline-chip">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l22 22M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 5-2.6M2 8.8a15 15 0 0 1 4.2-2.6M19.9 12.5a10 10 0 0 0-4-2.4M22 8.8a15 15 0 0 0-6.3-3.5"/><circle cx="12" cy="20" r="1"/></svg>
+      <span data-i18n="offline"></span>
+    </div>
+    <div id="verifyBanner" class="verify-banner">
+      <span data-i18n="verify.msg"></span><div class="spacer"></div>
+      <button id="btnResend" data-i18n="verify.resend"></button>
+    </div>
+
+    <!-- TODAY -->
+    <section id="scr-today" class="screen active">
+      <div class="screen-head"><h2 data-i18n="nav.today"></h2><div class="sub" id="todayDate"></div></div>
+      <div class="quickadd">
+        <input id="qaInput" type="text" data-i18n-ph="quickadd.ph" />
+        <button id="qaBtn" aria-label="add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div class="searchbox">
+        <svg class="s-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="searchInput" type="text" data-i18n-ph="search.ph" />
+        <button class="s-clear" id="searchClear">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="todayList"></div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section id="scr-cal" class="screen">
+      <div class="screen-head"><h2 data-i18n="nav.cal"></h2></div>
+      <div class="seg" style="margin-bottom:14px">
+        <button id="segMonth" class="active" data-i18n="cal.month"></button>
+        <button id="segWeek" data-i18n="cal.week"></button>
+      </div>
+      <div class="cal-head">
+        <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <h3 id="calTitle"></h3>
+        <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+      <div id="calBody"></div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="scr-dash" class="screen">
+      <div class="screen-head"><h2 data-i18n="nav.dash"></h2><div class="sub" data-i18n="dash.sub"></div></div>
+      <div class="dash-cards">
+        <div class="dcard late"><div class="num" id="dLate">0</div><div class="lbl" data-i18n="dash.late"></div></div>
+        <div class="dcard"><div class="num" id="dPending">0</div><div class="lbl" data-i18n="dash.pending"></div></div>
+        <div class="dcard done"><div class="num" id="dDone">0</div><div class="lbl" data-i18n="dash.doneWeek"></div></div>
+      </div>
+      <div class="panel"><h3 data-i18n="dash.byCat"></h3><div id="catBreakdown"></div></div>
+      <div class="panel"><h3 data-i18n="dash.overdueList"></h3><div id="overdueList"></div></div>
+    </section>
+
+    <!-- EXPORT -->
+    <section id="scr-export" class="screen">
+      <div class="screen-head"><h2 data-i18n="nav.export"></h2><div class="sub" data-i18n="export.sub"></div></div>
+      <div class="panel">
+        <h3 data-i18n="export.range"></h3>
+        <div class="field-inline" style="margin-bottom:12px">
+          <div class="field" style="margin:0"><label data-i18n="export.from"></label><input id="expFrom" class="input" type="date"/></div>
+          <div class="field" style="margin:0"><label data-i18n="export.to"></label><input id="expTo" class="input" type="date"/></div>
+        </div>
+        <div class="field"><label data-i18n="export.profile"></label><select id="expProfile" class="input"></select></div>
+        <button id="btnExport" class="btn btn-primary btn-block" style="margin-top:6px">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          <span data-i18n="export.download"></span>
+        </button>
+      </div>
+      <div class="panel">
+        <h3 data-i18n="export.ai"></h3>
+        <p style="font-size:13.5px;color:var(--muted);margin:0 0 12px" data-i18n="export.aiDesc"></p>
+        <button id="btnAISummary" class="btn btn-ghost btn-block" data-i18n="export.aiBtn"></button>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="scr-set" class="screen">
+      <div class="screen-head"><h2 data-i18n="nav.set"></h2></div>
+
+      <div class="set-group">
+        <div class="gh" data-i18n="set.language"></div>
+        <div class="set-row">
+          <div class="sr-main"><div class="sr-title" data-i18n="set.langTitle"></div></div>
+          <div class="lang-tog"><button data-lang="th">ไทย</button><button data-lang="en">EN</button></div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh" data-i18n="set.account"></div>
+        <div class="set-row">
+          <div class="sr-main"><div class="sr-title" id="setEmail">—</div><div class="sr-sub" id="setVerifyStatus">—</div></div>
+        </div>
+        <div class="set-row">
+          <div class="sr-main">
+            <div class="sr-title" data-i18n="set.plan"></div>
+            <div class="sr-sub" id="setQuota">—</div>
+            <div class="quota-bar"><i id="quotaFill"></i></div>
+          </div>
+          <span id="setPlanBadge" class="plan-badge plan-free">Free</span>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh" data-i18n="set.profiles"></div>
+        <div id="profileList"></div>
+        <div class="set-row" id="btnAddProfile" style="cursor:pointer">
+          <div class="sr-main"><div class="sr-title" style="color:var(--brand-dark)" data-i18n="set.addProfile"></div></div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="gh" data-i18n="set.line"></div>
+        <div class="set-row">
+          <div class="sr-main"><div class="sr-title" data-i18n="set.lineConnect"></div>
+            <div class="sr-sub" id="lineStatus"></div></div>
+        </div>
+        <div class="set-row" style="display:block">
+          <input id="lineTarget" class="input" type="text" placeholder="LINE userId / groupId" style="margin-bottom:8px"/>
+          <div class="field-inline">
+            <button id="btnSaveLine" class="btn btn-ghost" data-i18n="common.save"></button>
+            <button id="btnTestLine" class="btn btn-line" data-i18n="set.lineTest"></button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="sr-main"><div class="sr-title" data-i18n="set.dailyBrief"></div>
+            <div class="sr-sub" data-i18n="set.dailyBriefSub"></div></div>
+          <label style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
+            <input id="togDaily" type="checkbox" style="opacity:0;width:0;height:0"/>
+            <span id="togDailyUI" style="position:absolute;inset:0;background:var(--line-strong);border-radius:20px;transition:.2s;cursor:pointer"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="set-row" id="btnTrash" style="cursor:pointer">
+          <div class="sr-main"><div class="sr-title" data-i18n="trash.title"></div>
+            <div class="sr-sub" id="trashCount"></div></div>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="set-row" id="btnLogout" style="cursor:pointer">
+          <div class="sr-main"><div class="sr-title" style="color:var(--danger)" data-i18n="set.logout"></div></div>
+        </div>
+        <div class="set-row" id="btnDeleteAccount" style="cursor:pointer">
+          <div class="sr-main"><div class="sr-title" style="color:var(--danger)" data-i18n="set.deleteAccount"></div>
+            <div class="sr-sub" data-i18n="set.deleteAccountSub"></div></div>
+        </div>
+      </div>
+      <div style="text-align:center;color:var(--faint);font-size:12px;padding:6px 0 4px">JodWhite · v2.0</div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="new task">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav class="bottomnav"><div class="nav-inner">
+    <button class="navbtn active" data-scr="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0h6"/></svg>
+      <span data-i18n="nav.today"></span></button>
+    <button class="navbtn" data-scr="cal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span data-i18n="nav.cal"></span></button>
+    <button class="navbtn" data-scr="dash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></svg>
+      <span data-i18n="nav.dash"></span></button>
+    <button class="navbtn" data-scr="export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg>
+      <span data-i18n="nav.export"></span></button>
+    <button class="navbtn" data-scr="set">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span data-i18n="nav.set"></span></button>
+  </div></nav>
+</div>
+
+<!-- ═══════ EDITOR ═══════ -->
+<div id="editor" class="stack">
+  <div class="stack-head">
+    <button class="icon-btn" id="edClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    <h2 id="edTitle"></h2>
+    <button class="icon-btn" id="edDelete" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+  </div>
+  <div class="stack-body">
+    <div class="field mic-wrap">
+      <label data-i18n="ed.name"></label>
+      <input id="edName" class="input" type="text" data-i18n-ph="ed.namePh" />
+      <button class="mic-btn" id="micName"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button>
+      <div class="mic-hint" id="micHint"></div>
+    </div>
+    <div class="field mic-wrap">
+      <label data-i18n="ed.detail"></label>
+      <textarea id="edDetail" class="input" data-i18n-ph="ed.detailPh"></textarea>
+      <button class="mic-btn" id="micDetail" style="bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button>
+    </div>
+    <div class="field">
+      <label data-i18n="ed.status"></label>
+      <div class="seg" id="edStatusSeg">
+        <button data-st="pending" class="active" data-i18n="st.pending"></button>
+        <button data-st="doing" data-i18n="st.doing"></button>
+        <button data-st="done" data-i18n="st.done"></button>
+      </div>
+    </div>
+    <div class="field-inline">
+      <div class="field"><label data-i18n="ed.start"></label><input id="edStart" class="input" type="datetime-local" /></div>
+      <div class="field"><label data-i18n="ed.due"></label><input id="edDue" class="input" type="datetime-local" /></div>
+    </div>
+    <div class="field-inline">
+      <div class="field"><label data-i18n="ed.category"></label>
+        <input id="edCategory" class="input" type="text" list="catList" data-i18n-ph="ed.categoryPh" /><datalist id="catList"></datalist></div>
+      <div class="field"><label data-i18n="ed.involved"></label>
+        <input id="edInvolved" class="input" type="text" data-i18n-ph="ed.involvedPh" /></div>
+    </div>
+    <div class="field">
+      <label data-i18n="ed.remind"></label>
+      <div class="chips" id="edRemind">
+        <button data-min="0" class="active" data-i18n="rm.none"></button>
+        <button data-min="10" data-i18n="rm.10"></button>
+        <button data-min="30" data-i18n="rm.30"></button>
+        <button data-min="60" data-i18n="rm.60"></button>
+        <button data-min="120" data-i18n="rm.120"></button>
+        <button data-min="1440" data-i18n="rm.1440"></button>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="ed.repeat"></label>
+      <div class="chips" id="edRepeat">
+        <button data-rep="none" class="active" data-i18n="rp.none"></button>
+        <button data-rep="daily" data-i18n="rp.daily"></button>
+        <button data-rep="weekly" data-i18n="rp.weekly"></button>
+        <button data-rep="monthly" data-i18n="rp.monthly"></button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label data-i18n="ed.subtasks"></label>
+      <div id="subList"></div>
+      <button class="btn btn-ghost" id="btnAddSub" style="margin-top:8px;padding:9px 14px;font-size:13.5px" data-i18n="ed.addSub"></button>
+    </div>
+    <div class="field"><label data-i18n="ed.place"></label>
+      <input id="edPlace" class="input" type="text" data-i18n-ph="ed.placePh" /></div>
+    <div class="field">
+      <label data-i18n="ed.photo"></label>
+      <input id="edPhoto" type="file" accept="image/*" style="font-size:13px" />
+      <div class="upbar" id="upBar"><i></i></div>
+      <div id="photoPreview"></div>
+    </div>
+  </div>
+  <div class="stack-foot"><button id="edSave" class="btn btn-primary btn-block" data-i18n="ed.save"></button></div>
+</div>
+
+<!-- ═══════ TRASH ═══════ -->
+<div id="trashPage" class="stack">
+  <div class="stack-head">
+    <button class="icon-btn" id="trClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    <h2 data-i18n="trash.title"></h2>
+  </div>
+  <div class="stack-body">
+    <p style="font-size:13px;color:var(--muted);margin-top:0" data-i18n="trash.desc"></p>
+    <div id="trashList"></div>
+  </div>
+</div>
+
+<div id="sheetBackdrop" class="sheet-backdrop"><div class="sheet" id="sheetContent"></div></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 1) CONFIG — วางค่าตรงนี้                                    ║
+   ╚════════════════════════════════════════════════════════════╝ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDv6oF0m0IvoxXRMFfp0NUhq6CfWOKduq8",
+  authDomain: "jodwhite-cab23.firebaseapp.com",
+  projectId: "jodwhite-cab23",
+  storageBucket: "jodwhite-cab23.firebasestorage.app",
+  messagingSenderId: "894848215746",
+  appId: "1:894848215746:web:233a03093972892f38695b"
+};
+const LINE_WEBHOOK_URL = "PASTE_HERE";
+
+/* ลิมิต Free — นับเฉพาะ "งานที่ยังไม่เสร็จ" (งานที่เสร็จแล้วเก็บได้ไม่จำกัด) */
+const FREE_LIMITS = { profiles: 1, activeTasks: 30 };
+const TRASH_DAYS = 30;
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 2) I18N                                                     ║
+   ╚════════════════════════════════════════════════════════════╝ */
+const I18N = {
+th:{
+ "tagline":"จดงานให้ครบ · เตือนก่อนถึงกำหนด · ไม่ลืมสักงาน",
+ "auth.name":"ชื่อที่แสดง","auth.namePh":"เช่น สมชาย","auth.email":"อีเมล",
+ "auth.password":"รหัสผ่าน","auth.passPh":"อย่างน้อย 6 ตัวอักษร",
+ "auth.login":"เข้าสู่ระบบ","auth.signup":"สมัครสมาชิก","auth.forgot":"ลืมรหัสผ่าน?",
+ "auth.noAccount":"ยังไม่มีบัญชี?","auth.haveAccount":"มีบัญชีอยู่แล้ว?",
+ "auth.legal":"เมื่อสมัครสมาชิก ถือว่ายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว",
+ "auth.fillBoth":"กรุณากรอกอีเมลและรหัสผ่าน","auth.fillEmail":"กรอกอีเมลก่อน",
+ "auth.resetSent":"ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว",
+ "verify.msg":"📩 ยืนยันอีเมลเพื่อความปลอดภัยของบัญชี","verify.resend":"ส่งอีกครั้ง",
+ "verify.sent":"ส่งลิงก์ยืนยันแล้ว","verify.yes":"✓ ยืนยันอีเมลแล้ว","verify.no":"⚠ ยังไม่ยืนยันอีเมล",
+ "offline":"ออฟไลน์อยู่ — จดงานได้ตามปกติ ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์",
+ "nav.today":"วันนี้","nav.cal":"ปฏิทิน","nav.dash":"แดชบอร์ด","nav.export":"ส่งออก","nav.set":"ตั้งค่า",
+ "quickadd.ph":"จดงานเร็ว ๆ แล้วกด Enter","search.ph":"ค้นหางาน…","search.results":"ผลการค้นหา",
+ "search.none":"ไม่พบงานที่ตรงกับคำค้น",
+ "group.overdue":"เลยกำหนด","group.today":"วันนี้","group.noDate":"ยังไม่กำหนดวัน",
+ "empty.title":"ยังไม่มีงานวันนี้","empty.desc":"พิมพ์ในช่องด้านบน หรือกดปุ่ม + เพื่อจดงานแรก",
+ "st.pending":"รอทำ","st.doing":"กำลังทำ","st.done":"เสร็จ",
+ "cal.month":"เดือน","cal.week":"สัปดาห์",
+ "dash.sub":"ภาพรวมงานของคุณ","dash.late":"เลยกำหนด","dash.pending":"ค้างอยู่","dash.doneWeek":"เสร็จสัปดาห์นี้",
+ "dash.byCat":"แยกตามหมวดหมู่","dash.overdueList":"งานเลยกำหนด","dash.noOpen":"ไม่มีงานค้าง 🎉",
+ "dash.noOverdue":"ไม่มีงานเลยกำหนด ✅","dash.uncat":"ไม่ระบุหมวด",
+ "export.sub":"สรุปงานเป็น Excel","export.range":"เลือกช่วงวันที่","export.from":"ตั้งแต่","export.to":"ถึง",
+ "export.profile":"โปรไฟล์","export.allProfiles":"ทุกโปรไฟล์","export.download":"ดาวน์โหลด Excel",
+ "export.ai":"สรุปด้วย AI ✨","export.aiDesc":"ให้ AI อ่านงานในช่วงที่เลือก แล้วสรุปเป็นภาษาคน พร้อมข้อสังเกต",
+ "export.aiBtn":"สร้างสรุปด้วย AI","export.none":"ไม่มีงานในช่วงที่เลือก","export.done":"ดาวน์โหลด Excel แล้ว",
+ "set.language":"ภาษา","set.langTitle":"ภาษาของแอป","set.account":"บัญชี","set.plan":"แพ็กเกจ",
+ "set.profiles":"โปรไฟล์บุคคล","set.addProfile":"+ เพิ่มโปรไฟล์","set.line":"การแจ้งเตือน LINE",
+ "set.lineConnect":"เชื่อมต่อ LINE","set.lineNo":"ยังไม่ได้เชื่อม — วาง LINE User/Group ID",
+ "set.lineYes":"✓ เชื่อมแล้ว","set.lineTest":"ทดสอบส่ง","set.lineSaved":"บันทึก LINE ID แล้ว",
+ "set.lineNeedId":"กรอก LINE ID ก่อน","set.lineSent":"ส่งข้อความทดสอบแล้ว",
+ "set.dailyBrief":"สรุปงานตอนเช้า","set.dailyBriefSub":"ส่งสรุปงานวันนี้เข้า LINE ทุกเช้า 08:00",
+ "set.logout":"ออกจากระบบ","set.logoutQ":"ออกจากระบบ?",
+ "set.deleteAccount":"ลบบัญชีและข้อมูลทั้งหมด","set.deleteAccountSub":"ลบถาวร กู้คืนไม่ได้",
+ "set.delAccQ":"ลบบัญชีถาวร?","set.delAccMsg":"งาน โปรไฟล์ และข้อมูลทั้งหมดจะถูกลบถาวร กู้คืนไม่ได้",
+ "set.delAccReauth":"เพื่อความปลอดภัย กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง",
+ "quota.unlimited":"ไม่จำกัดงานและโปรไฟล์ · ปลดล็อก AI",
+ "quota.used":"ใช้ไป {a}/{b} งานที่ยังไม่เสร็จ · {c}/{d} โปรไฟล์",
+ "quota.hint":"งานที่ทำเสร็จแล้วเก็บได้ไม่จำกัด",
+ "trash.title":"ถังขยะ","trash.desc":"งานที่ลบจะเก็บไว้ 30 วัน แล้วลบถาวรอัตโนมัติ",
+ "trash.empty":"ถังขยะว่าง","trash.restore":"กู้คืน","trash.purge":"ลบถาวร",
+ "trash.restored":"กู้คืนงานแล้ว","trash.count":"{n} งาน","trash.deleted":"ลบถาวรแล้ว",
+ "ed.newTask":"เพิ่มงาน","ed.editTask":"แก้ไขงาน","ed.name":"ชื่องาน","ed.namePh":"เช่น ประชุมฝ่ายการเงิน",
+ "ed.detail":"รายละเอียด (ถ้ามี)","ed.detailPh":"รายละเอียดเพิ่มเติม…","ed.status":"สถานะ",
+ "ed.start":"เริ่ม","ed.due":"กำหนดเสร็จ","ed.category":"หมวดหมู่ / โปรเจกต์","ed.categoryPh":"เช่น เอกสาร, ประชุม",
+ "ed.involved":"คนสั่งงาน / ผู้เกี่ยวข้อง","ed.involvedPh":"เช่น คุณสมชาย",
+ "ed.remind":"เตือนก่อนถึงกำหนด","ed.repeat":"ทำซ้ำ","ed.subtasks":"งานย่อย","ed.addSub":"+ เพิ่มงานย่อย",
+ "ed.place":"สถานที่ (ไม่บังคับ)","ed.placePh":"เช่น ห้องประชุมใหญ่ ชั้น 5",
+ "ed.photo":"แนบรูป (ไม่บังคับ)","ed.save":"บันทึกงาน","ed.needName":"กรุณากรอกชื่องาน",
+ "ed.saved":"บันทึกการแก้ไขแล้ว","ed.added":"เพิ่มงานแล้ว","ed.saveFail":"บันทึกไม่สำเร็จ",
+ "ed.delQ":"ลบงานนี้?","ed.delMsg":"งานจะถูกย้ายไปถังขยะ 30 วัน","ed.deleted":"ย้ายไปถังขยะแล้ว",
+ "ed.subPh":"งานย่อย…","ed.uploading":"กำลังอัปโหลดรูป…","ed.photoFail":"อัปโหลดรูปไม่สำเร็จ",
+ "rm.none":"ไม่เตือน","rm.10":"10 นาที","rm.30":"30 นาที","rm.60":"1 ชม.","rm.120":"2 ชม.","rm.1440":"1 วัน",
+ "rp.none":"ไม่ซ้ำ","rp.daily":"ทุกวัน","rp.weekly":"ทุกสัปดาห์","rp.monthly":"ทุกเดือน",
+ "rp.next":"สร้างงานถัดไปแล้ว",
+ "prof.select":"เลือกโปรไฟล์","prof.selectSub":"งานแต่ละโปรไฟล์แยกกัน","prof.add":"+ เพิ่มโปรไฟล์ใหม่",
+ "prof.new":"เพิ่มโปรไฟล์","prof.newSub":"เช่น \"งานของ CEO\", \"งานส่วนตัว\"","prof.namePh":"ชื่อโปรไฟล์",
+ "prof.create":"สร้างโปรไฟล์","prof.added":"เพิ่มโปรไฟล์แล้ว","prof.needName":"กรอกชื่อก่อน",
+ "prof.manage":"จัดการโปรไฟล์นี้","prof.saveName":"บันทึกชื่อ","prof.delete":"ลบโปรไฟล์นี้",
+ "prof.delQ":"ลบโปรไฟล์นี้?","prof.delMsg":"งานทั้งหมดในโปรไฟล์นี้จะถูกลบด้วย","prof.deleted":"ลบโปรไฟล์แล้ว",
+ "prof.current":"กำลังใช้","prof.default":"งานของฉัน",
+ "up.title":"ปลดล็อก Premium ✨","up.limitTasks":"งานที่ยังไม่เสร็จถึงลิมิตของแพ็กเกจ Free แล้ว ({n} งาน)",
+ "up.limitProfiles":"แพ็กเกจ Free สร้างได้ {n} โปรไฟล์","up.aiSoon":"สรุปด้วย AI เป็นฟีเจอร์ Premium — กำลังพัฒนา",
+ "up.list":"• งานและโปรไฟล์ไม่จำกัด<br>• จดงานด้วยเสียง (AI แยกเป็นงานอัตโนมัติ)<br>• สรุปงานด้วย AI<br>• รายงานย้อนหลังไม่จำกัด",
+ "up.soon":"ระบบสมัคร Premium จะเปิดเร็ว ๆ นี้","up.ok":"เข้าใจแล้ว",
+ "common.save":"บันทึก","common.cancel":"ยกเลิก","common.confirm":"ยืนยัน","common.undo":"เลิกทำ",
+ "common.loadFail":"โหลดข้อมูลไม่สำเร็จ","common.fail":"ทำรายการไม่สำเร็จ",
+ "mic.unsupported":"อุปกรณ์นี้ยังไม่รองรับปุ่มพูดในแอป — ใช้ปุ่มไมค์บนคีย์บอร์ดได้เลย",
+ "line.newTask":"📌 งานใหม่","line.done":"✅ เสร็จแล้ว","line.due":"กำหนด","line.test":"✅ ทดสอบจาก JodWhite — เชื่อมต่อสำเร็จ!"
+},
+en:{
+ "tagline":"Capture every task · Get reminded · Never forget",
+ "auth.name":"Display name","auth.namePh":"e.g. Alex","auth.email":"Email",
+ "auth.password":"Password","auth.passPh":"At least 6 characters",
+ "auth.login":"Sign in","auth.signup":"Create account","auth.forgot":"Forgot password?",
+ "auth.noAccount":"No account yet?","auth.haveAccount":"Already have an account?",
+ "auth.legal":"By creating an account you accept the terms of use and privacy policy",
+ "auth.fillBoth":"Enter your email and password","auth.fillEmail":"Enter your email first",
+ "auth.resetSent":"Password reset link sent to your email",
+ "verify.msg":"📩 Verify your email to secure your account","verify.resend":"Resend",
+ "verify.sent":"Verification link sent","verify.yes":"✓ Email verified","verify.no":"⚠ Email not verified",
+ "offline":"You're offline — keep writing, it'll sync when you're back",
+ "nav.today":"Today","nav.cal":"Calendar","nav.dash":"Dashboard","nav.export":"Export","nav.set":"Settings",
+ "quickadd.ph":"Jot a task, press Enter","search.ph":"Search tasks…","search.results":"Search results",
+ "search.none":"No tasks match your search",
+ "group.overdue":"Overdue","group.today":"Today","group.noDate":"No date set",
+ "empty.title":"Nothing due today","empty.desc":"Type above or tap + to jot your first task",
+ "st.pending":"To do","st.doing":"Doing","st.done":"Done",
+ "cal.month":"Month","cal.week":"Week",
+ "dash.sub":"Your workload at a glance","dash.late":"Overdue","dash.pending":"Open","dash.doneWeek":"Done this week",
+ "dash.byCat":"By category","dash.overdueList":"Overdue tasks","dash.noOpen":"Nothing open 🎉",
+ "dash.noOverdue":"Nothing overdue ✅","dash.uncat":"Uncategorized",
+ "export.sub":"Export your tasks to Excel","export.range":"Pick a date range","export.from":"From","export.to":"To",
+ "export.profile":"Profile","export.allProfiles":"All profiles","export.download":"Download Excel",
+ "export.ai":"AI summary ✨","export.aiDesc":"Let AI read the selected range and summarise it in plain language, with observations",
+ "export.aiBtn":"Generate AI summary","export.none":"No tasks in the selected range","export.done":"Excel downloaded",
+ "set.language":"Language","set.langTitle":"App language","set.account":"Account","set.plan":"Plan",
+ "set.profiles":"Profiles","set.addProfile":"+ Add profile","set.line":"LINE notifications",
+ "set.lineConnect":"Connect LINE","set.lineNo":"Not connected — paste a LINE User/Group ID",
+ "set.lineYes":"✓ Connected","set.lineTest":"Send test","set.lineSaved":"LINE ID saved",
+ "set.lineNeedId":"Enter a LINE ID first","set.lineSent":"Test message sent",
+ "set.dailyBrief":"Morning brief","set.dailyBriefSub":"Send today's tasks to LINE every morning at 08:00",
+ "set.logout":"Sign out","set.logoutQ":"Sign out?",
+ "set.deleteAccount":"Delete account and all data","set.deleteAccountSub":"Permanent, cannot be undone",
+ "set.delAccQ":"Delete account permanently?","set.delAccMsg":"All tasks, profiles and data will be permanently deleted",
+ "set.delAccReauth":"For security, please sign in again and retry",
+ "quota.unlimited":"Unlimited tasks and profiles · AI unlocked",
+ "quota.used":"{a}/{b} open tasks · {c}/{d} profiles",
+ "quota.hint":"Completed tasks are kept forever",
+ "trash.title":"Trash","trash.desc":"Deleted tasks stay here for 30 days, then are removed automatically",
+ "trash.empty":"Trash is empty","trash.restore":"Restore","trash.purge":"Delete forever",
+ "trash.restored":"Task restored","trash.count":"{n} tasks","trash.deleted":"Deleted forever",
+ "ed.newTask":"New task","ed.editTask":"Edit task","ed.name":"Task name","ed.namePh":"e.g. Finance team meeting",
+ "ed.detail":"Details (optional)","ed.detailPh":"Anything worth remembering…","ed.status":"Status",
+ "ed.start":"Starts","ed.due":"Due","ed.category":"Category / project","ed.categoryPh":"e.g. Docs, Meetings",
+ "ed.involved":"Requested by / people","ed.involvedPh":"e.g. Alex",
+ "ed.remind":"Remind me before due","ed.repeat":"Repeat","ed.subtasks":"Subtasks","ed.addSub":"+ Add subtask",
+ "ed.place":"Location (optional)","ed.placePh":"e.g. Main meeting room, 5F",
+ "ed.photo":"Attach a photo (optional)","ed.save":"Save task","ed.needName":"Give the task a name",
+ "ed.saved":"Changes saved","ed.added":"Task added","ed.saveFail":"Couldn't save",
+ "ed.delQ":"Delete this task?","ed.delMsg":"It moves to Trash for 30 days","ed.deleted":"Moved to Trash",
+ "ed.subPh":"Subtask…","ed.uploading":"Uploading photo…","ed.photoFail":"Photo upload failed",
+ "rm.none":"No reminder","rm.10":"10 min","rm.30":"30 min","rm.60":"1 hr","rm.120":"2 hrs","rm.1440":"1 day",
+ "rp.none":"Never","rp.daily":"Daily","rp.weekly":"Weekly","rp.monthly":"Monthly",
+ "rp.next":"Next occurrence created",
+ "prof.select":"Choose profile","prof.selectSub":"Each profile keeps its own tasks","prof.add":"+ New profile",
+ "prof.new":"New profile","prof.newSub":"e.g. \"CEO's tasks\", \"Personal\"","prof.namePh":"Profile name",
+ "prof.create":"Create profile","prof.added":"Profile added","prof.needName":"Enter a name first",
+ "prof.manage":"Manage this profile","prof.saveName":"Save name","prof.delete":"Delete this profile",
+ "prof.delQ":"Delete this profile?","prof.delMsg":"All tasks in this profile will be deleted too","prof.deleted":"Profile deleted",
+ "prof.current":"In use","prof.default":"My tasks",
+ "up.title":"Unlock Premium ✨","up.limitTasks":"You've hit the Free limit of {n} open tasks",
+ "up.limitProfiles":"Free includes {n} profile","up.aiSoon":"AI summary is a Premium feature — coming soon",
+ "up.list":"• Unlimited tasks and profiles<br>• Voice capture (AI turns speech into tasks)<br>• AI summaries<br>• Unlimited history",
+ "up.soon":"Premium sign-up opens soon","up.ok":"Got it",
+ "common.save":"Save","common.cancel":"Cancel","common.confirm":"Confirm","common.undo":"Undo",
+ "common.loadFail":"Couldn't load your data","common.fail":"That didn't work",
+ "mic.unsupported":"In-app voice isn't supported here — use the mic on your keyboard instead",
+ "line.newTask":"📌 New task","line.done":"✅ Done","line.due":"due","line.test":"✅ Test from JodWhite — connected!"
+}};
+
+const savedLang = localStorage.getItem('jw_lang');
+let LANG = (savedLang==='th'||savedLang==='en')
+  ? savedLang
+  : ((navigator.language||'').toLowerCase().startsWith('th') ? 'th' : 'en');
+function t(key, vars){
+  let s = (I18N[LANG] && I18N[LANG][key]) || (I18N.th[key]) || key;
+  if(vars) Object.keys(vars).forEach(k=> s = s.split('{'+k+'}').join(vars[k]));
+  return s;
+}
+function locale(){ return LANG==='th' ? 'th-TH' : 'en-GB'; }
+function applyI18n(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.innerHTML = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('.lang-tog button').forEach(b=> b.classList.toggle('active', b.dataset.lang===LANG));
+  setAuthMode(authMode);
+  if(uid){ renderProfileUI(); renderAll(); }
+}
+function setLang(l){
+  LANG=l; localStorage.setItem('jw_lang',l);
+  applyI18n();
+  if(uid && db) db.collection('users').doc(uid).update({lang:l}).catch(()=>{});
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 3) State                                                    ║
+   ╚════════════════════════════════════════════════════════════╝ */
+let auth, db, storage, uid=null, userDoc=null;
+let profiles=[], currentProfileId=null, tasks=[], allTasks=[];
+let unsubProfiles=null, unsubTasks=null;
+let editingId=null, editPhotoFile=null, editPhotoUrl=null, editPhotoPath=null;
+let editStatus='pending', editRemindMin=0, editRepeat='none', editSubs=[];
+let calMode='month', calCursor=new Date(), authMode='login', searchTerm='';
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const isConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey!=="PASTE_HERE";
+
+function boot(){
+  applyI18n();
+  if(!isConfigured){
+    $('#loading').classList.add('hidden');
+    $('#configWarn').classList.remove('hidden');
+    return;
+  }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  auth=firebase.auth(); db=firebase.firestore(); storage=firebase.storage();
+  // ── ออฟไลน์: เปิดก่อนใช้งาน Firestore อื่น ๆ ──
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  auth.onAuthStateChanged(onAuthChange);
+  bindEvents();
+  registerSW();
+  window.addEventListener('online', updateOnline);
+  window.addEventListener('offline', updateOnline);
+  updateOnline();
+}
+function updateOnline(){ $('#offlineChip').classList.toggle('show', !navigator.onLine); }
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 4) Auth                                                     ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function onAuthChange(user){
+  $('#loading').classList.add('hidden');
+  if(user){
+    uid=user.uid;
+    $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden');
+    bootstrapUser(user);
+  }else{
+    uid=null; userDoc=null; profiles=[]; tasks=[]; allTasks=[];
+    if(unsubProfiles) unsubProfiles(); if(unsubTasks) unsubTasks();
+    $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden');
+  }
+}
+function setAuthMode(mode){
+  authMode=mode;
+  $('#nameField').style.display = mode==='signup'?'block':'none';
+  $('#btnAuth').textContent = mode==='signup'? t('auth.signup') : t('auth.login');
+  $('#switchText').textContent = mode==='signup'? t('auth.haveAccount') : t('auth.noAccount');
+  $('#btnSwitch').textContent = mode==='signup'? t('auth.login') : t('auth.signup');
+  $('#btnForgot').style.display = mode==='signup'?'none':'inline';
+}
+function showAuthMsg(txt,type='err'){
+  const el=$('#authMsg'); el.className='auth-msg'; el.textContent='';
+  if(txt){ el.classList.add(type); el.textContent=txt; }
+}
+function authErr(code){
+  const th={'auth/invalid-email':'อีเมลไม่ถูกต้อง','auth/user-not-found':'ไม่พบบัญชีนี้',
+   'auth/wrong-password':'รหัสผ่านไม่ถูกต้อง','auth/invalid-credential':'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+   'auth/email-already-in-use':'อีเมลนี้ถูกใช้แล้ว','auth/weak-password':'รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)',
+   'auth/too-many-requests':'พยายามหลายครั้งเกินไป ลองใหม่ภายหลัง','auth/network-request-failed':'เชื่อมต่อเครือข่ายไม่ได้'};
+  const en={'auth/invalid-email':'That email address isn\'t valid','auth/user-not-found':'No account with that email',
+   'auth/wrong-password':'Incorrect password','auth/invalid-credential':'Email or password is incorrect',
+   'auth/email-already-in-use':'That email is already registered','auth/weak-password':'Password is too short (6+ characters)',
+   'auth/too-many-requests':'Too many attempts — try again later','auth/network-request-failed':'Can\'t reach the network'};
+  const m = LANG==='th'?th:en;
+  return m[code] || (LANG==='th'?'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง':'Something went wrong — try again');
+}
+async function handleAuth(){
+  const email=$('#inEmail').value.trim(), pass=$('#inPass').value;
+  if(!email||!pass){ showAuthMsg(t('auth.fillBoth')); return; }
+  $('#btnAuth').disabled=true;
+  try{
+    if(authMode==='signup'){
+      const cred=await auth.createUserWithEmailAndPassword(email,pass);
+      const name=$('#inName').value.trim()||email.split('@')[0];
+      await cred.user.updateProfile({displayName:name});
+      try{ await cred.user.sendEmailVerification(); }catch(e){}
+    }else await auth.signInWithEmailAndPassword(email,pass);
+  }catch(e){ showAuthMsg(authErr(e.code)); }
+  finally{ $('#btnAuth').disabled=false; }
+}
+async function handleForgot(){
+  const email=$('#inEmail').value.trim();
+  if(!email){ showAuthMsg(t('auth.fillEmail')); return; }
+  try{ await auth.sendPasswordResetEmail(email); showAuthMsg(t('auth.resetSent'),'ok'); }
+  catch(e){ showAuthMsg(authErr(e.code)); }
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 5) Bootstrap                                                ║
+   ╚════════════════════════════════════════════════════════════╝ */
+async function bootstrapUser(user){
+  const ref=db.collection('users').doc(uid);
+  const snap=await ref.get();
+  if(!snap.exists){
+    await ref.set({email:user.email, displayName:user.displayName||'', plan:'free',
+      lineTarget:'', dailyBrief:false, lang:LANG, currentProfileId:null,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      // ── สถิติพื้นฐานสำหรับดูว่าคนใช้จริงไหม ──
+      stats:{signupAt:Date.now(), tasksCreated:0, lastActiveAt:Date.now()}});
+  }
+  userDoc=(await ref.get()).data();
+  if(userDoc.lang && userDoc.lang!==LANG){ LANG=userDoc.lang; localStorage.setItem('jw_lang',LANG); applyI18n(); }
+  ref.update({'stats.lastActiveAt':Date.now()}).catch(()=>{});
+
+  const profSnap=await ref.collection('profiles').get();
+  if(profSnap.empty){
+    const p=await ref.collection('profiles').add({name:t('prof.default'), color:'#4A9EF6',
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    currentProfileId=p.id; await ref.update({currentProfileId});
+  }else currentProfileId = userDoc.currentProfileId || profSnap.docs[0].id;
+
+  listenProfiles(); listenTasks(); updateVerifyBanner(user);
+  $('#togDaily').checked = !!userDoc.dailyBrief; paintToggle();
+  purgeOldTrash();
+}
+function listenProfiles(){
+  if(unsubProfiles) unsubProfiles();
+  unsubProfiles=db.collection('users').doc(uid).collection('profiles').orderBy('createdAt')
+    .onSnapshot(s=>{
+      profiles=s.docs.map(d=>({id:d.id,...d.data()}));
+      if(!profiles.find(p=>p.id===currentProfileId)&&profiles[0]) currentProfileId=profiles[0].id;
+      renderProfileUI(); renderSettings();
+    });
+}
+function listenTasks(){
+  if(unsubTasks) unsubTasks();
+  unsubTasks=db.collection('users').doc(uid).collection('tasks')
+    .onSnapshot(s=>{
+      allTasks=s.docs.map(d=>({id:d.id,...d.data()}));
+      tasks=allTasks.filter(x=>x.profileId===currentProfileId && !x.deletedAt);
+      renderAll();
+    }, e=>{ console.error(e); toast(t('common.loadFail'),true); });
+}
+const liveTasks = ()=> allTasks.filter(x=>!x.deletedAt);
+const trashed = ()=> allTasks.filter(x=>x.deletedAt);
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 6) Render                                                   ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function renderProfileUI(){
+  const cur=profiles.find(p=>p.id===currentProfileId);
+  $('#curProfileName').textContent = cur? cur.name : t('prof.default');
+  const sel=$('#expProfile');
+  if(sel){ sel.innerHTML='';
+    const o=document.createElement('option'); o.value='__all'; o.textContent=t('export.allProfiles'); sel.appendChild(o);
+    profiles.forEach(p=>{const x=document.createElement('option');x.value=p.id;x.textContent=p.name;
+      if(p.id===currentProfileId)x.selected=true;sel.appendChild(x);});
+  }
+}
+function renderAll(){ renderToday(); renderCalendar(); renderDashboard(); renderCatList(); renderSettings(); renderTrash(); }
+function statusClass(s){ return s==='done'?'s-done':s==='doing'?'s-doing':'s-pending'; }
+function isOverdue(t2){ return t2.status!=='done' && t2.dueAt&&t2.dueAt.toMillis && t2.dueAt.toMillis()<Date.now(); }
+function fmtTime(ts){ if(!ts||!ts.toDate)return''; return ts.toDate().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(ts){ if(!ts||!ts.toDate)return''; return ts.toDate().toLocaleDateString(locale(),{day:'numeric',month:'short'}); }
+function dayKey(d){ return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); }
+function byDue(a,b){ const am=a.dueAt&&a.dueAt.toMillis?a.dueAt.toMillis():Infinity;
+  const bm=b.dueAt&&b.dueAt.toMillis?b.dueAt.toMillis():Infinity; return am-bm; }
+
+function taskCardHTML(x){
+  const over=isOverdue(x);
+  const check = x.status==='done'?'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>'
+    : x.status==='doing'?'<svg viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="12" r="5"/></svg>':'';
+  const dueTxt = x.dueAt? (fmtDate(x.dueAt)+' '+fmtTime(x.dueAt)) : '';
+  const subs=x.subtasks||[]; const subDone=subs.filter(s=>s.done).length;
+  return `<div class="task ${x.status==='done'?'done':''} ${over?'overdue':''}">
+    <div class="task-top">
+      <div class="status-pill ${statusClass(x.status)}"><button data-cycle="${x.id}">${check}</button></div>
+      <div class="task-body" data-open="${x.id}">
+        <div class="task-title">${esc(x.title)}</div>
+        ${x.detail?`<div class="task-detail-txt">${esc(x.detail)}</div>`:''}
+        <div class="task-meta">
+          ${dueTxt?`<span class="m due ${over?'late':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${dueTxt}${over?' · '+t('group.overdue'):''}</span>`:''}
+          ${x.repeat&&x.repeat!=='none'?`<span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>${t('rp.'+x.repeat)}</span>`:''}
+          ${x.involved?`<span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>${esc(x.involved)}</span>`:''}
+          ${x.place?`<span class="m"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(x.place)}</span>`:''}
+        </div>
+        ${subs.length?`<div class="sub-prog"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>${subDone}/${subs.length}</div>`:''}
+        ${x.category?`<span class="tag">${esc(x.category)}</span>`:''}
+        ${x.photoUrl?`<img class="task-thumb" src="${x.photoUrl}" loading="lazy" alt=""/>`:''}
+      </div>
+    </div></div>`;
+}
+
+function renderToday(){
+  const now=new Date();
+  $('#todayDate').textContent = now.toLocaleDateString(locale(),{weekday:'long',day:'numeric',month:'long'});
+  if(searchTerm){
+    const q=searchTerm.toLowerCase();
+    const res=tasks.filter(x=>[x.title,x.detail,x.category,x.involved,x.place]
+      .filter(Boolean).some(v=>v.toLowerCase().includes(q))).sort(byDue);
+    $('#todayList').innerHTML = res.length
+      ? `<div class="day-label">${t('search.results')} · ${res.length}</div>`+res.map(taskCardHTML).join('')
+      : `<div class="empty"><div class="em-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h3>${t('search.none')}</h3></div>`;
+    return;
+  }
+  const s=new Date(now); s.setHours(0,0,0,0);
+  const e=new Date(now); e.setHours(23,59,59,999);
+  const over=tasks.filter(isOverdue);
+  const today=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()>=s&&x.dueAt.toDate()<=e&&!isOverdue(x));
+  const noDate=tasks.filter(x=>!x.dueAt&&x.status!=='done');
+  let h='';
+  if(over.length) h+=`<div class="day-label" style="color:var(--danger)">${t('group.overdue')}</div>`+over.sort(byDue).map(taskCardHTML).join('');
+  if(today.length) h+=`<div class="day-label">${t('group.today')}</div>`+today.sort(byDue).map(taskCardHTML).join('');
+  if(noDate.length) h+=`<div class="day-label">${t('group.noDate')}</div>`+noDate.map(taskCardHTML).join('');
+  if(!h) h=`<div class="empty"><div class="em-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+    <h3>${t('empty.title')}</h3><p>${t('empty.desc')}</p></div>`;
+  $('#todayList').innerHTML=h;
+}
+function renderCatList(){
+  const cats=[...new Set(liveTasks().map(x=>x.category).filter(Boolean))];
+  $('#catList').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
+}
+/* Calendar */
+function renderCalendar(){ calMode==='month'?renderMonth():renderWeek(); }
+function renderMonth(){
+  const y=calCursor.getFullYear(), m=calCursor.getMonth();
+  $('#calTitle').textContent=calCursor.toLocaleDateString(locale(),{month:'long',year:'numeric'});
+  const startDow=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate(), today=new Date();
+  const dows=LANG==='th'?['อา','จ','อ','พ','พฤ','ศ','ส']:['S','M','T','W','T','F','S'];
+  let h='<div class="cal-grid">'+dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const prev=new Date(y,m,0).getDate();
+  for(let i=startDow-1;i>=0;i--) h+=cellHTML(new Date(y,m-1,prev-i),true);
+  for(let d=1;d<=dim;d++) h+=cellHTML(new Date(y,m,d),false,today);
+  const trail=(7-((startDow+dim)%7))%7;
+  for(let d=1;d<=trail;d++) h+=cellHTML(new Date(y,m+1,d),true);
+  $('#calBody').innerHTML=h+'</div>';
+}
+function cellHTML(date,other,today){
+  const key=dayKey(date);
+  const dt=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&dayKey(x.dueAt.toDate())===key);
+  const isT=today&&dayKey(date)===dayKey(today);
+  const dots=dt.slice(0,4).map(x=>`<i class="${isOverdue(x)?'dot-late':x.status==='done'?'dot-done':x.status==='doing'?'dot-doing':'dot-pending'}"></i>`).join('');
+  return `<div class="cal-cell ${other?'other':''} ${isT?'today':''}" data-day="${date.toISOString()}">
+    <div class="dnum">${date.getDate()}</div><div class="cal-dots">${dots}</div></div>`;
+}
+function renderWeek(){
+  const cur=new Date(calCursor), mon=new Date(cur); mon.setDate(cur.getDate()-cur.getDay());
+  const end=new Date(mon); end.setDate(mon.getDate()+6); const today=new Date();
+  $('#calTitle').textContent=`${mon.toLocaleDateString(locale(),{day:'numeric',month:'short'})} – ${end.toLocaleDateString(locale(),{day:'numeric',month:'short'})}`;
+  let h='<div class="cal-week">';
+  for(let i=0;i<7;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    const dt=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&dayKey(x.dueAt.toDate())===dayKey(d)).sort(byDue);
+    h+=`<div class="cal-week-day ${dayKey(d)===dayKey(today)?'today':''}">
+      <div class="wd">${d.toLocaleDateString(locale(),{weekday:'long'})} ${d.getDate()}</div>`;
+    if(dt.length) dt.forEach(x=>{h+=`<div class="mini-task" data-open="${x.id}"><i class="${isOverdue(x)?'dot-late':x.status==='done'?'dot-done':x.status==='doing'?'dot-doing':'dot-pending'}"></i>${fmtTime(x.dueAt)} · ${esc(x.title)}</div>`;});
+    else h+=`<div style="font-size:12.5px;color:var(--faint);padding:3px 0">—</div>`;
+    h+='</div>';
+  }
+  $('#calBody').innerHTML=h+'</div>';
+}
+/* Dashboard */
+function renderDashboard(){
+  const over=tasks.filter(isOverdue), pend=tasks.filter(x=>x.status!=='done'&&!isOverdue(x));
+  const ws=new Date(); ws.setDate(ws.getDate()-ws.getDay()); ws.setHours(0,0,0,0);
+  const doneW=tasks.filter(x=>x.status==='done'&&x.updatedAt&&x.updatedAt.toDate&&x.updatedAt.toDate()>=ws);
+  $('#dLate').textContent=over.length; $('#dPending').textContent=pend.length; $('#dDone').textContent=doneW.length;
+  const open=tasks.filter(x=>x.status!=='done'), cats={};
+  open.forEach(x=>{const c=x.category||t('dash.uncat');cats[c]=(cats[c]||0)+1;});
+  const max=Math.max(1,...Object.values(cats)), rows=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  $('#catBreakdown').innerHTML = rows.length? rows.map(([c,n])=>
+    `<div class="bd-row"><div class="bd-name">${esc(c)}</div><div class="bd-bar"><i style="width:${Math.round(n/max*100)}%"></i></div><div class="bd-val">${n}</div></div>`).join('')
+    : `<div style="color:var(--faint);font-size:13px">${t('dash.noOpen')}</div>`;
+  $('#overdueList').innerHTML = over.length? over.sort(byDue).map(x=>
+    `<div class="mini-task" data-open="${x.id}"><i class="dot-late"></i>${esc(x.title)} · <span style="color:var(--danger)">${fmtDate(x.dueAt)}</span></div>`).join('')
+    : `<div style="color:var(--faint);font-size:13px">${t('dash.noOverdue')}</div>`;
+}
+/* Settings */
+function renderSettings(){
+  const user=auth&&auth.currentUser; if(!user)return;
+  $('#setEmail').textContent=user.email;
+  $('#setVerifyStatus').textContent = user.emailVerified? t('verify.yes'):t('verify.no');
+  const plan=(userDoc&&userDoc.plan)||'free';
+  const b=$('#setPlanBadge'); b.textContent= plan==='premium'?'Premium':'Free';
+  b.className='plan-badge '+(plan==='premium'?'plan-premium':'plan-free');
+  const active=tasks.filter(x=>x.status!=='done').length;
+  if(plan==='premium'){ $('#setQuota').textContent=t('quota.unlimited');
+    $('#quotaFill').style.width='100%'; $('#quotaFill').className='';
+  }else{
+    $('#setQuota').textContent=t('quota.used',{a:active,b:FREE_LIMITS.activeTasks,c:profiles.length,d:FREE_LIMITS.profiles})+' · '+t('quota.hint');
+    const pct=Math.min(100,Math.round(active/FREE_LIMITS.activeTasks*100));
+    const f=$('#quotaFill'); f.style.width=pct+'%'; f.className=pct>=100?'full':pct>=80?'warn':'';
+  }
+  $('#profileList').innerHTML=profiles.map(p=>
+    `<div class="profile-item" data-pid="${p.id}"><span class="pi-dot" style="background:${p.color||'#4A9EF6'}"></span>
+      <span class="pi-name">${esc(p.name)}</span>${p.id===currentProfileId?`<span class="pi-cur">${t('prof.current')}</span>`:''}</div>`).join('');
+  $('#lineTarget').value=(userDoc&&userDoc.lineTarget)||'';
+  $('#lineStatus').textContent=(userDoc&&userDoc.lineTarget)? t('set.lineYes'):t('set.lineNo');
+  $('#trashCount').textContent=t('trash.count',{n:trashed().length});
+}
+function updateVerifyBanner(u){ $('#verifyBanner').style.display=u.emailVerified?'none':'flex'; }
+function paintToggle(){
+  const on=$('#togDaily').checked, ui=$('#togDailyUI');
+  ui.style.background=on?'var(--brand)':'var(--line-strong)';
+  ui.innerHTML=`<span style="position:absolute;top:3px;left:${on?'21px':'3px'};width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>`;
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 7) Editor                                                   ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function openEditor(id){
+  editingId=id||null; editPhotoFile=null; editPhotoUrl=null; editPhotoPath=null;
+  $('#photoPreview').innerHTML=''; $('#edPhoto').value=''; $('#upBar').classList.remove('show');
+  if(id){
+    const x=allTasks.find(a=>a.id===id); if(!x)return;
+    $('#edTitle').textContent=t('ed.editTask'); $('#edDelete').style.display='flex';
+    $('#edName').value=x.title||''; $('#edDetail').value=x.detail||'';
+    $('#edCategory').value=x.category||''; $('#edInvolved').value=x.involved||'';
+    $('#edPlace').value=x.place||'';
+    $('#edStart').value=tsToLocal(x.startAt); $('#edDue').value=tsToLocal(x.dueAt);
+    setEditStatus(x.status||'pending'); setRemind(x.remindOffsetMin||0); setRepeat(x.repeat||'none');
+    editSubs=(x.subtasks||[]).map(s=>({...s}));
+    if(x.photoUrl){ editPhotoUrl=x.photoUrl; editPhotoPath=x.photoPath||null; showPhotoPreview(x.photoUrl); }
+  }else{
+    const plan=(userDoc&&userDoc.plan)||'free';
+    const active=tasks.filter(x=>x.status!=='done').length;
+    if(plan!=='premium' && active>=FREE_LIMITS.activeTasks){
+      showUpgrade(t('up.limitTasks',{n:FREE_LIMITS.activeTasks})); return;
+    }
+    $('#edTitle').textContent=t('ed.newTask'); $('#edDelete').style.display='none';
+    ['#edName','#edDetail','#edCategory','#edInvolved','#edPlace','#edStart','#edDue'].forEach(s=>$(s).value='');
+    setEditStatus('pending'); setRemind(0); setRepeat('none'); editSubs=[];
+  }
+  renderSubs();
+  $('#editor').classList.add('open'); $('#app').classList.add('stack-open');
+}
+function closeEditor(){ $('#editor').classList.remove('open'); $('#app').classList.remove('stack-open'); }
+function setEditStatus(s){ editStatus=s; $$('#edStatusSeg button').forEach(b=>b.classList.toggle('active',b.dataset.st===s)); }
+function setRemind(m){ editRemindMin=m; $$('#edRemind button').forEach(b=>b.classList.toggle('active',+b.dataset.min===m)); }
+function setRepeat(r){ editRepeat=r; $$('#edRepeat button').forEach(b=>b.classList.toggle('active',b.dataset.rep===r)); }
+function tsToLocal(ts){ if(!ts||!ts.toDate)return'';
+  const d=ts.toDate(); return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+function localToDate(v){ return v? new Date(v):null; }
+
+function renderSubs(){
+  $('#subList').innerHTML=editSubs.map((s,i)=>
+    `<div class="sub-row"><div class="sbox ${s.done?'on':''}" data-sub="${i}">
+      ${s.done?'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>':''}</div>
+      <input type="text" value="${esc(s.text||'')}" data-subin="${i}" placeholder="${t('ed.subPh')}" class="${s.done?'on':''}"/>
+      <button class="sdel" data-subdel="${i}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`).join('');
+}
+
+async function saveTask(){
+  const title=$('#edName').value.trim();
+  if(!title){ toast(t('ed.needName'),true); return; }
+  const due=localToDate($('#edDue').value), start=localToDate($('#edStart').value);
+  const remindAt=(editRemindMin>0&&due)? new Date(due.getTime()-editRemindMin*60000):null;
+  const subs=editSubs.filter(s=>(s.text||'').trim()).map(s=>({text:s.text.trim(),done:!!s.done}));
+  const data={
+    profileId:currentProfileId, ownerUid:uid, title,
+    detail:$('#edDetail').value.trim(), category:$('#edCategory').value.trim(),
+    involved:$('#edInvolved').value.trim(), place:$('#edPlace').value.trim(),
+    status:editStatus, subtasks:subs, repeat:editRepeat,
+    startAt: start? firebase.firestore.Timestamp.fromDate(start):null,
+    dueAt: due? firebase.firestore.Timestamp.fromDate(due):null,
+    remindOffsetMin:editRemindMin,
+    remindAt: remindAt? firebase.firestore.Timestamp.fromDate(remindAt):null,
+    reminderSent:false, deletedAt:null,
+    lang:LANG,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  $('#edSave').disabled=true;
+  try{
+    const col=db.collection('users').doc(uid).collection('tasks');
+    let taskId=editingId;
+    if(editingId){
+      const prev=allTasks.find(a=>a.id===editingId);
+      if(prev && prev.status!==editStatus)
+        data.history=(prev.history||[]).concat([{at:Date.now(),type:'status',from:prev.status,to:editStatus}]);
+      if(editPhotoUrl===null && prev && prev.photoPath) await deletePhoto(prev.photoPath);
+      data.photoUrl=editPhotoUrl; data.photoPath=editPhotoPath;
+      await col.doc(editingId).update(data);
+    }else{
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      data.history=[{at:Date.now(),type:'create'}];
+      data.photoUrl=null; data.photoPath=null;
+      const ref=await col.add(data); taskId=ref.id;
+      db.collection('users').doc(uid).update({'stats.tasksCreated':firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+    }
+    if(editPhotoFile){
+      toast(t('ed.uploading'));
+      const up=await uploadPhoto(editPhotoFile, taskId);
+      if(up) await col.doc(taskId).update({photoUrl:up.url, photoPath:up.path});
+    }
+    toast(editingId? t('ed.saved'):t('ed.added'));
+    if(!editingId){
+      const dueTxt=due? ` · ${t('line.due')} ${due.toLocaleString(locale(),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
+      notifyLine(`${t('line.newTask')}: ${title}${dueTxt}`);
+    }else if(editStatus==='done') notifyLine(`${t('line.done')}: ${title}`);
+    closeEditor();
+  }catch(e){ console.error(e); toast(t('ed.saveFail'),true); }
+  finally{ $('#edSave').disabled=false; }
+}
+
+/* ── Soft delete + undo ── */
+async function softDelete(id){
+  const x=allTasks.find(a=>a.id===id); if(!x)return;
+  await db.collection('users').doc(uid).collection('tasks').doc(id)
+    .update({deletedAt:firebase.firestore.Timestamp.now()});
+  toastUndo(t('ed.deleted'), async()=>{
+    await db.collection('users').doc(uid).collection('tasks').doc(id).update({deletedAt:null});
+    toast(t('trash.restored'));
+  });
+}
+async function restoreTask(id){
+  await db.collection('users').doc(uid).collection('tasks').doc(id).update({deletedAt:null});
+  toast(t('trash.restored'));
+}
+async function purgeTask(id){
+  const x=allTasks.find(a=>a.id===id);
+  if(x&&x.photoPath) await deletePhoto(x.photoPath);
+  await db.collection('users').doc(uid).collection('tasks').doc(id).delete();
+  toast(t('trash.deleted'));
+}
+async function purgeOldTrash(){
+  const cutoff=Date.now()-TRASH_DAYS*86400000;
+  setTimeout(()=>{
+    trashed().forEach(x=>{
+      const ms=x.deletedAt&&x.deletedAt.toMillis? x.deletedAt.toMillis():0;
+      if(ms&&ms<cutoff) purgeTask(x.id).catch(()=>{});
+    });
+  },3000);
+}
+function renderTrash(){
+  const list=trashed().sort((a,b)=>(b.deletedAt&&b.deletedAt.toMillis?b.deletedAt.toMillis():0)-(a.deletedAt&&a.deletedAt.toMillis?a.deletedAt.toMillis():0));
+  $('#trashList').innerHTML = list.length? list.map(x=>{
+    const left=TRASH_DAYS-Math.floor((Date.now()-(x.deletedAt&&x.deletedAt.toMillis?x.deletedAt.toMillis():Date.now()))/86400000);
+    return `<div class="task"><div class="task-top"><div class="task-body">
+      <div class="task-title">${esc(x.title)}</div>
+      <div class="task-meta"><span class="m">${left} ${LANG==='th'?'วัน':'days'}</span></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px" data-restore="${x.id}">${t('trash.restore')}</button>
+        <button class="btn btn-danger" style="padding:8px 14px;font-size:13px" data-purge="${x.id}">${t('trash.purge')}</button>
+      </div></div></div></div>`;}).join('')
+    : `<div class="empty"><h3>${t('trash.empty')}</h3></div>`;
+}
+
+async function cycleStatus(id){
+  const x=allTasks.find(a=>a.id===id); if(!x)return;
+  const order=['pending','doing','done'];
+  const next=order[(order.indexOf(x.status||'pending')+1)%3];
+  try{
+    await db.collection('users').doc(uid).collection('tasks').doc(id).update({
+      status:next, updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      history:(x.history||[]).concat([{at:Date.now(),type:'status',from:x.status,to:next}])});
+    if(next==='done'){
+      notifyLine(`${t('line.done')}: ${x.title}`);
+      if(x.repeat&&x.repeat!=='none') await spawnNext(x);
+    }
+  }catch(e){ toast(t('common.fail'),true); }
+}
+/* ── งานประจำ: สร้างรอบถัดไปเมื่อปิดงาน ── */
+async function spawnNext(x){
+  if(!x.dueAt||!x.dueAt.toDate) return;
+  const step=d=>{ const n=new Date(d);
+    if(x.repeat==='daily') n.setDate(n.getDate()+1);
+    else if(x.repeat==='weekly') n.setDate(n.getDate()+7);
+    else n.setMonth(n.getMonth()+1);
+    return n; };
+  const nextDue=step(x.dueAt.toDate());
+  const nextStart=x.startAt&&x.startAt.toDate? step(x.startAt.toDate()):null;
+  const remindAt=(x.remindOffsetMin>0)? new Date(nextDue.getTime()-x.remindOffsetMin*60000):null;
+  await db.collection('users').doc(uid).collection('tasks').add({
+    profileId:x.profileId, ownerUid:uid, title:x.title, detail:x.detail||'',
+    category:x.category||'', involved:x.involved||'', place:x.place||'',
+    status:'pending', subtasks:(x.subtasks||[]).map(s=>({text:s.text,done:false})),
+    repeat:x.repeat, lang:x.lang||LANG,
+    startAt: nextStart? firebase.firestore.Timestamp.fromDate(nextStart):null,
+    dueAt: firebase.firestore.Timestamp.fromDate(nextDue),
+    remindOffsetMin:x.remindOffsetMin||0,
+    remindAt: remindAt? firebase.firestore.Timestamp.fromDate(remindAt):null,
+    reminderSent:false, deletedAt:null, photoUrl:null, photoPath:null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    history:[{at:Date.now(),type:'repeat',from:x.id}]
+  });
+  toast(t('rp.next'));
+}
+/* ── จดเร็ว ── */
+async function quickAdd(){
+  const v=$('#qaInput').value.trim(); if(!v)return;
+  const plan=(userDoc&&userDoc.plan)||'free';
+  const active=tasks.filter(x=>x.status!=='done').length;
+  if(plan!=='premium'&&active>=FREE_LIMITS.activeTasks){ showUpgrade(t('up.limitTasks',{n:FREE_LIMITS.activeTasks})); return; }
+  $('#qaInput').value='';
+  try{
+    await db.collection('users').doc(uid).collection('tasks').add({
+      profileId:currentProfileId, ownerUid:uid, title:v, detail:'', category:'', involved:'', place:'',
+      status:'pending', subtasks:[], repeat:'none', lang:LANG,
+      startAt:null, dueAt:null, remindOffsetMin:0, remindAt:null, reminderSent:false,
+      deletedAt:null, photoUrl:null, photoPath:null,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      history:[{at:Date.now(),type:'create'}]});
+    db.collection('users').doc(uid).update({'stats.tasksCreated':firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+    toast(t('ed.added'));
+  }catch(e){ toast(t('ed.saveFail'),true); }
+}
+
+/* ── Photo → Firebase Storage ── */
+async function handlePhotoPick(file){
+  if(!file)return;
+  editPhotoFile=file;
+  try{ showPhotoPreview(await compressPreview(file)); }catch(e){}
+}
+function compressPreview(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{ const sc=Math.min(1,400/img.width), c=document.createElement('canvas');
+      c.width=img.width*sc; c.height=img.height*sc;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',.7)); };
+    img.onerror=rej; img.src=url;
+  });
+}
+function compressBlob(file,maxW=1400,q=.72){
+  return new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{ const sc=Math.min(1,maxW/img.width), c=document.createElement('canvas');
+      c.width=img.width*sc; c.height=img.height*sc;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error('blob')),'image/jpeg',q); };
+    img.onerror=rej; img.src=url;
+  });
+}
+async function uploadPhoto(file, taskId){
+  try{
+    const blob=await compressBlob(file);
+    const path=`users/${uid}/tasks/${taskId}/photo_${Date.now()}.jpg`;
+    const ref=storage.ref(path);
+    const bar=$('#upBar'); bar.classList.add('show');
+    const task=ref.put(blob,{contentType:'image/jpeg'});
+    await new Promise((res,rej)=>{
+      task.on('state_changed',
+        s=>{ bar.querySelector('i').style.width=Math.round(s.bytesTransferred/s.totalBytes*100)+'%'; },
+        rej, res);
+    });
+    bar.classList.remove('show');
+    return {url: await ref.getDownloadURL(), path};
+  }catch(e){ console.error(e); toast(t('ed.photoFail'),true); $('#upBar').classList.remove('show'); return null; }
+}
+async function deletePhoto(path){ try{ await storage.ref(path).delete(); }catch(e){} }
+function showPhotoPreview(src){
+  $('#photoPreview').innerHTML=`<div class="attach-thumb"><img src="${src}" alt=""/>
+    <button class="rm" id="rmPhoto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`;
+  $('#rmPhoto').onclick=()=>{ editPhotoFile=null; editPhotoUrl=null;
+    $('#photoPreview').innerHTML=''; $('#edPhoto').value=''; };
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 8) Voice                                                    ║
+   ╚════════════════════════════════════════════════════════════╝ */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recog=null, recTarget=null;
+function setupMic(btnSel,inputSel){
+  const btn=$(btnSel), input=$(inputSel);
+  if(!SR){ btn.addEventListener('click',()=>{ input.focus();
+      $('#micHint').textContent=t('mic.unsupported'); setTimeout(()=>$('#micHint').textContent='',4500); });
+    return; }
+  btn.addEventListener('click',()=>{
+    if(recog&&recTarget===input){ recog.stop(); return; }
+    if(recog) recog.stop();
+    recog=new SR(); recog.lang= LANG==='th'?'th-TH':'en-US';
+    recog.interimResults=true; recTarget=input;
+    const base=input.value? input.value+' ':'';
+    btn.classList.add('rec');
+    recog.onresult=e=>{ let s=''; for(let i=e.resultIndex;i<e.results.length;i++) s+=e.results[i][0].transcript;
+      input.value=base+s; };
+    recog.onerror=()=>{ btn.classList.remove('rec'); recog=null; recTarget=null; };
+    recog.onend=()=>{ btn.classList.remove('rec'); recog=null; recTarget=null; };
+    recog.start();
+  });
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 9) LINE                                                     ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function notifyLine(text){
+  const to=(userDoc&&userDoc.lineTarget)||'';
+  if(!LINE_WEBHOOK_URL||LINE_WEBHOOK_URL==='PASTE_HERE'||!to) return;
+  fetch(LINE_WEBHOOK_URL,{method:'POST',mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({to,message:text})}).catch(()=>{});
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 10) Export                                                  ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function exportExcel(){
+  const from=$('#expFrom').value? new Date($('#expFrom').value):null;
+  const to=$('#expTo').value? new Date($('#expTo').value+'T23:59:59'):null;
+  const pid=$('#expProfile').value;
+  let rows=liveTasks().filter(x=> pid==='__all'?true:x.profileId===pid);
+  if(from) rows=rows.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()>=from);
+  if(to) rows=rows.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()<=to);
+  if(!rows.length){ toast(t('export.none'),true); return; }
+  const pm={}; profiles.forEach(p=>pm[p.id]=p.name);
+  const H = LANG==='th'
+    ? ['โปรไฟล์','ชื่องาน','รายละเอียด','หมวดหมู่','คนสั่ง/เกี่ยวข้อง','สถานที่','เริ่ม','กำหนดเสร็จ','สถานะ','งานย่อย']
+    : ['Profile','Task','Details','Category','Requested by','Location','Starts','Due','Status','Subtasks'];
+  const data=rows.sort(byDue).map(x=>{
+    const subs=x.subtasks||[];
+    const o={};
+    o[H[0]]=pm[x.profileId]||''; o[H[1]]=x.title||''; o[H[2]]=x.detail||'';
+    o[H[3]]=x.category||''; o[H[4]]=x.involved||''; o[H[5]]=x.place||'';
+    o[H[6]]=x.startAt&&x.startAt.toDate?x.startAt.toDate().toLocaleString(locale()):'';
+    o[H[7]]=x.dueAt&&x.dueAt.toDate?x.dueAt.toDate().toLocaleString(locale()):'';
+    o[H[8]]=t('st.'+(x.status||'pending'));
+    o[H[9]]=subs.length? `${subs.filter(s=>s.done).length}/${subs.length}`:'';
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=[{wch:14},{wch:28},{wch:32},{wch:14},{wch:18},{wch:20},{wch:20},{wch:20},{wch:10},{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,LANG==='th'?'งาน':'Tasks');
+  XLSX.writeFile(wb,`JodWhite_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast(t('export.done'));
+}
+function aiSummary(){ showUpgrade(t('up.aiSoon')); }
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 11) Profiles / sheets / toast                               ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function switchProfileSheet(){
+  openSheet(`<div class="sheet-grip"></div><h3>${t('prof.select')}</h3><div class="sh-sub">${t('prof.selectSub')}</div>
+    ${profiles.map(p=>`<div class="profile-item" data-switch="${p.id}" style="border-radius:12px">
+      <span class="pi-dot" style="background:${p.color||'#4A9EF6'}"></span><span class="pi-name">${esc(p.name)}</span>
+      ${p.id===currentProfileId?`<span class="pi-cur">${t('prof.current')}</span>`:''}</div>`).join('')}
+    <button class="btn btn-ghost btn-block" id="sheetAddProfile" style="margin-top:14px">${t('prof.add')}</button>`);
+  $$('#sheetContent [data-switch]').forEach(el=>el.onclick=()=>{
+    currentProfileId=el.dataset.switch;
+    db.collection('users').doc(uid).update({currentProfileId}).catch(()=>{});
+    tasks=allTasks.filter(x=>x.profileId===currentProfileId&&!x.deletedAt);
+    renderProfileUI(); renderAll(); closeSheet();
+  });
+  $('#sheetAddProfile').onclick=()=>{ closeSheet(); addProfilePrompt(); };
+}
+function addProfilePrompt(){
+  const plan=(userDoc&&userDoc.plan)||'free';
+  if(plan!=='premium'&&profiles.length>=FREE_LIMITS.profiles){ showUpgrade(t('up.limitProfiles',{n:FREE_LIMITS.profiles})); return; }
+  openSheet(`<div class="sheet-grip"></div><h3>${t('prof.new')}</h3><div class="sh-sub">${t('prof.newSub')}</div>
+    <input id="npName" class="input" placeholder="${t('prof.namePh')}" style="margin-bottom:14px"/>
+    <button class="btn btn-primary btn-block" id="npSave">${t('prof.create')}</button>`);
+  setTimeout(()=>$('#npName').focus(),200);
+  $('#npSave').onclick=async()=>{
+    const name=$('#npName').value.trim(); if(!name){toast(t('prof.needName'),true);return;}
+    const colors=['#4A9EF6','#0E9F8E','#E0803C','#8E5BD6','#D6453F'];
+    try{
+      const r=await db.collection('users').doc(uid).collection('profiles').add({
+        name,color:colors[profiles.length%colors.length],
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      currentProfileId=r.id;
+      await db.collection('users').doc(uid).update({currentProfileId});
+      toast(t('prof.added')); closeSheet();
+    }catch(e){ toast(t('common.fail'),true); }
+  };
+}
+function profileActionSheet(pid){
+  const p=profiles.find(x=>x.id===pid); if(!p)return;
+  openSheet(`<div class="sheet-grip"></div><h3>${esc(p.name)}</h3><div class="sh-sub">${t('prof.manage')}</div>
+    <input id="rpName" class="input" value="${esc(p.name)}" style="margin-bottom:12px"/>
+    <button class="btn btn-primary btn-block" id="rpSave" style="margin-bottom:10px">${t('prof.saveName')}</button>
+    ${profiles.length>1?`<button class="btn btn-danger btn-block" id="rpDelete">${t('prof.delete')}</button>`:''}`);
+  $('#rpSave').onclick=async()=>{
+    const name=$('#rpName').value.trim(); if(!name)return;
+    await db.collection('users').doc(uid).collection('profiles').doc(pid).update({name});
+    toast(t('common.save')); closeSheet();
+  };
+  if($('#rpDelete')) $('#rpDelete').onclick=()=>{
+    closeSheet();
+    showConfirm(t('prof.delQ'),t('prof.delMsg'),async()=>{
+      const batch=db.batch();
+      allTasks.filter(x=>x.profileId===pid).forEach(x=>batch.delete(db.collection('users').doc(uid).collection('tasks').doc(x.id)));
+      batch.delete(db.collection('users').doc(uid).collection('profiles').doc(pid));
+      await batch.commit();
+      if(currentProfileId===pid){ const other=profiles.find(x=>x.id!==pid);
+        if(other){ currentProfileId=other.id; await db.collection('users').doc(uid).update({currentProfileId}); } }
+      toast(t('prof.deleted'));
+    });
+  };
+}
+function openSheet(html){ $('#sheetContent').innerHTML=html; $('#sheetBackdrop').classList.add('open'); }
+function closeSheet(){ $('#sheetBackdrop').classList.remove('open'); }
+function showConfirm(title,msg,onYes){
+  openSheet(`<div class="sheet-grip"></div><h3>${title}</h3><div class="sh-sub">${msg}</div>
+    <button class="btn btn-danger btn-block" id="cfYes" style="margin-bottom:10px">${t('common.confirm')}</button>
+    <button class="btn btn-line btn-block" id="cfNo">${t('common.cancel')}</button>`);
+  $('#cfYes').onclick=()=>{ closeSheet(); onYes(); };
+  $('#cfNo').onclick=closeSheet;
+}
+function showUpgrade(reason){
+  openSheet(`<div class="sheet-grip"></div><h3>${t('up.title')}</h3><div class="sh-sub">${reason}</div>
+    <div style="background:var(--brand-tint);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13.5px;line-height:1.8">${t('up.list')}</div>
+    <div style="font-size:12.5px;color:var(--faint);text-align:center">${t('up.soon')}</div>
+    <button class="btn btn-line btn-block" id="upClose" style="margin-top:12px">${t('up.ok')}</button>`);
+  $('#upClose').onclick=closeSheet;
+}
+let toastTimer=null;
+function toast(msg,err=false){
+  const el=$('#toast'); el.innerHTML=`<span>${esc(msg)}</span>`;
+  el.className='show'+(err?' err':'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',2400);
+}
+function toastUndo(msg,onUndo){
+  const el=$('#toast'); el.innerHTML=`<span>${esc(msg)}</span><button class="undo" id="tUndo">${t('common.undo')}</button>`;
+  el.className='show';
+  $('#tUndo').onclick=()=>{ el.className=''; onUndo(); };
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',6000);
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showScreen(n){
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $('#scr-'+n).classList.add('active');
+  $$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.scr===n));
+  // ซ่อนปุ่ม + ในหน้าที่ไม่ได้ใช้จดงาน เพื่อไม่ให้บังเนื้อหา
+  $('#fab').style.display = (n==='set'||n==='export') ? 'none' : 'flex';
+  window.scrollTo(0,0);
+}
+
+/* ── ลบบัญชี (PDPA) ── */
+async function deleteAccount(){
+  showConfirm(t('set.delAccQ'), t('set.delAccMsg'), async()=>{
+    try{
+      const col=db.collection('users').doc(uid).collection('tasks');
+      for(const x of allTasks){ if(x.photoPath) await deletePhoto(x.photoPath); }
+      const chunks=[]; let batch=db.batch(), n=0;
+      allTasks.forEach(x=>{ batch.delete(col.doc(x.id)); if(++n%400===0){chunks.push(batch);batch=db.batch();} });
+      profiles.forEach(p=>batch.delete(db.collection('users').doc(uid).collection('profiles').doc(p.id)));
+      chunks.push(batch);
+      for(const b of chunks) await b.commit();
+      await db.collection('users').doc(uid).delete();
+      await auth.currentUser.delete();
+    }catch(e){
+      console.error(e);
+      toast(e.code==='auth/requires-recent-login'? t('set.delAccReauth'):t('common.fail'),true);
+    }
+  });
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 12) Events                                                  ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function bindEvents(){
+  $('#btnAuth').onclick=handleAuth;
+  $('#btnSwitch').onclick=()=>{ setAuthMode(authMode==='login'?'signup':'login'); showAuthMsg(''); };
+  $('#btnForgot').onclick=handleForgot;
+  $('#inPass').addEventListener('keydown',e=>{ if(e.key==='Enter') handleAuth(); });
+  $$('.lang-tog button').forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
+
+  $$('.navbtn').forEach(b=>b.onclick=()=>showScreen(b.dataset.scr));
+  $('#fab').onclick=()=>openEditor(null);
+
+  $('#qaBtn').onclick=quickAdd;
+  $('#qaInput').addEventListener('keydown',e=>{ if(e.key==='Enter') quickAdd(); });
+  $('#searchInput').addEventListener('input',e=>{
+    searchTerm=e.target.value.trim();
+    $('#searchClear').classList.toggle('show',!!searchTerm);
+    renderToday();
+  });
+  $('#searchClear').onclick=()=>{ searchTerm=''; $('#searchInput').value='';
+    $('#searchClear').classList.remove('show'); renderToday(); };
+
+  $('#edClose').onclick=closeEditor;
+  $('#edSave').onclick=saveTask;
+  $('#edDelete').onclick=()=>{ if(!editingId)return;
+    showConfirm(t('ed.delQ'),t('ed.delMsg'),async()=>{ const id=editingId; closeEditor(); await softDelete(id); }); };
+  $$('#edStatusSeg button').forEach(b=>b.onclick=()=>setEditStatus(b.dataset.st));
+  $$('#edRemind button').forEach(b=>b.onclick=()=>setRemind(+b.dataset.min));
+  $$('#edRepeat button').forEach(b=>b.onclick=()=>setRepeat(b.dataset.rep));
+  $('#edPhoto').onchange=e=>handlePhotoPick(e.target.files[0]);
+  $('#btnAddSub').onclick=()=>{ editSubs.push({text:'',done:false}); renderSubs();
+    const ins=$$('#subList input'); if(ins.length) ins[ins.length-1].focus(); };
+  $('#subList').addEventListener('click',e=>{
+    const box=e.target.closest('[data-sub]');
+    if(box){ const i=+box.dataset.sub; editSubs[i].done=!editSubs[i].done; renderSubs(); return; }
+    const del=e.target.closest('[data-subdel]');
+    if(del){ editSubs.splice(+del.dataset.subdel,1); renderSubs(); }
+  });
+  $('#subList').addEventListener('input',e=>{
+    const inp=e.target.closest('[data-subin]');
+    if(inp) editSubs[+inp.dataset.subin].text=inp.value;
+  });
+  setupMic('#micName','#edName'); setupMic('#micDetail','#edDetail');
+
+  document.body.addEventListener('click',e=>{
+    const c=e.target.closest('[data-cycle]'); if(c){ cycleStatus(c.dataset.cycle); return; }
+    const o=e.target.closest('[data-open]'); if(o){ openEditor(o.dataset.open); return; }
+    const d=e.target.closest('[data-day]'); if(d){ calCursor=new Date(d.dataset.day); calMode='week';
+      $('#segWeek').classList.add('active'); $('#segMonth').classList.remove('active'); renderCalendar(); return; }
+    const p=e.target.closest('[data-pid]'); if(p){ profileActionSheet(p.dataset.pid); return; }
+    const r=e.target.closest('[data-restore]'); if(r){ restoreTask(r.dataset.restore); return; }
+    const g=e.target.closest('[data-purge]'); if(g){ const id=g.dataset.purge;
+      showConfirm(t('trash.purge'),t('ed.delMsg'),()=>purgeTask(id)); return; }
+  });
+
+  $('#segMonth').onclick=()=>{calMode='month';$('#segMonth').classList.add('active');$('#segWeek').classList.remove('active');renderCalendar();};
+  $('#segWeek').onclick=()=>{calMode='week';$('#segWeek').classList.add('active');$('#segMonth').classList.remove('active');renderCalendar();};
+  $('#calPrev').onclick=()=>{ calMode==='month'?calCursor.setMonth(calCursor.getMonth()-1):calCursor.setDate(calCursor.getDate()-7); calCursor=new Date(calCursor); renderCalendar(); };
+  $('#calNext').onclick=()=>{ calMode==='month'?calCursor.setMonth(calCursor.getMonth()+1):calCursor.setDate(calCursor.getDate()+7); calCursor=new Date(calCursor); renderCalendar(); };
+
+  $('#btnProfileSwitch').onclick=switchProfileSheet;
+  $('#btnAddProfile').onclick=addProfilePrompt;
+  $('#btnExport').onclick=exportExcel;
+  $('#btnAISummary').onclick=aiSummary;
+
+  $('#btnTrash').onclick=()=>{ renderTrash(); $('#trashPage').classList.add('open'); $('#app').classList.add('stack-open'); };
+  $('#trClose').onclick=()=>{ $('#trashPage').classList.remove('open'); $('#app').classList.remove('stack-open'); };
+
+  $('#btnLogout').onclick=()=>showConfirm(t('set.logoutQ'),'',()=>auth.signOut());
+  $('#btnDeleteAccount').onclick=deleteAccount;
+  $('#btnResend').onclick=async()=>{ try{ await auth.currentUser.sendEmailVerification(); toast(t('verify.sent')); }
+    catch(e){ toast(t('common.fail'),true); } };
+  $('#btnSaveLine').onclick=async()=>{
+    const v=$('#lineTarget').value.trim();
+    await db.collection('users').doc(uid).update({lineTarget:v});
+    userDoc.lineTarget=v; renderSettings(); toast(t('set.lineSaved'));
+  };
+  $('#btnTestLine').onclick=()=>{
+    const v=$('#lineTarget').value.trim();
+    if(!v){ toast(t('set.lineNeedId'),true); return; }
+    userDoc.lineTarget=v; notifyLine(t('line.test')); toast(t('set.lineSent'));
+  };
+  $('#togDaily').onchange=async e=>{
+    paintToggle();
+    await db.collection('users').doc(uid).update({dailyBrief:e.target.checked});
+    userDoc.dailyBrief=e.target.checked;
+  };
+  $('#togDailyUI').onclick=()=>{ $('#togDaily').checked=!$('#togDaily').checked;
+    $('#togDaily').dispatchEvent(new Event('change')); };
+
+  $('#sheetBackdrop').onclick=e=>{ if(e.target.id==='sheetBackdrop') closeSheet(); };
+
+  const now=new Date();
+  $('#expFrom').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+  $('#expTo').value=now.toISOString().slice(0,10);
+}
+function registerSW(){ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+boot();
+</script>
+</body>
+</html>
