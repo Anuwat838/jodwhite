@@ -1,6 +1,6 @@
 /* JodWhite service worker — network-first strategy
    หมายเหตุ: เมื่อแก้แอปแล้วต้องการบังคับอัปเดต ให้เปลี่ยนเลข cache ด้านล่าง (เช่น jodwhite-v2) */
-const CACHE = "jodwhite-v5";
+const CACHE = "jodwhite-v7";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
@@ -38,5 +38,43 @@ self.addEventListener("fetch", e => {
         return res;
       })
       .catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
+  );
+});
+
+
+/* ═══════════════════════════════════════════════════════════════
+   แจ้งเตือนแบบ Push (ส่งมาจากเซิร์ฟเวอร์ผ่าน Firebase Cloud Messaging)
+   ทำงานแม้ปิดแอปอยู่ และไม่มีค่าใช้จ่าย
+   ═══════════════════════════════════════════════════════════════ */
+self.addEventListener("push", e => {
+  let payload = {};
+  try { payload = e.data ? e.data.json() : {}; }
+  catch (_) { payload = { notification: { title: "JodWhite", body: e.data ? e.data.text() : "" } }; }
+
+  const n = payload.notification || payload.data || {};
+  const title = n.title || "JodWhite";
+  const options = {
+    body: n.body || "",
+    icon: "./icon-192.png",
+    badge: "./icon-192.png",
+    tag: n.tag || "jodwhite",
+    renotify: true,
+    data: { url: (payload.fcmOptions && payload.fcmOptions.link) ||
+                 (payload.fcm_options && payload.fcm_options.link) ||
+                 n.link || "./index.html" }
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "./index.html";
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if ("focus" in c) return c.focus();
+      }
+      return clients.openWindow(url);
+    })
   );
 });

@@ -147,6 +147,15 @@
     background:var(--line);color:var(--muted)}
   .searchbox .s-clear.show{display:flex}
 
+  /* แถบเตือนงานที่ยังไม่กำหนดวัน */
+  .nodate-bar{margin:-4px 0 12px}
+  .nodate-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;
+    background:var(--amber-tint);border:1px solid #EBD79A;color:#8A6A00;
+    font-size:13px;font-weight:600;transition:transform .05s}
+  .nodate-chip:active{transform:scale(.97)}
+  .nodate-chip svg{width:15px;height:15px;flex:none}
+  .nodate-chip.active{background:#8A6A00;border-color:#8A6A00;color:#fff}
+
   /* ── Task card ── */
   .task{background:var(--card);border:1px solid var(--line);border-radius:16px;
     padding:13px 14px;margin-bottom:11px;box-shadow:var(--shadow);transition:transform .06s}
@@ -440,6 +449,12 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
+      <div id="noDateBar" class="nodate-bar hidden">
+        <button id="noDateChip" class="nodate-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 15v3M12 21h.01"/></svg>
+          <span id="noDateText"></span>
+        </button>
+      </div>
       <div id="todayList"></div>
     </section>
 
@@ -528,16 +543,28 @@
       </div>
 
       <div class="set-group">
-        <div class="gh" data-i18n="set.line"></div>
+        <div class="gh" data-i18n="set.notify"></div>
+        <div class="set-row">
+          <div class="sr-main"><div class="sr-title" data-i18n="push.title"></div>
+            <div class="sr-sub" id="pushStatus"></div></div>
+          <label style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
+            <input id="togPush" type="checkbox" style="opacity:0;width:0;height:0"/>
+            <span id="togPushUI" style="position:absolute;inset:0;background:var(--line-strong);border-radius:20px;transition:.2s;cursor:pointer"></span>
+          </label>
+        </div>
         <div class="set-row">
           <div class="sr-main"><div class="sr-title" data-i18n="set.lineConnect"></div>
             <div class="sr-sub" id="lineStatus"></div></div>
+          <button id="btnLinkLine" class="btn btn-ghost" style="padding:9px 14px;font-size:13.5px" data-i18n="line.connectBtn"></button>
         </div>
-        <div class="set-row" style="display:block">
-          <input id="lineTarget" class="input" type="text" placeholder="LINE userId / groupId" style="margin-bottom:8px"/>
-          <div class="field-inline">
-            <button id="btnSaveLine" class="btn btn-ghost" data-i18n="common.save"></button>
-            <button id="btnTestLine" class="btn btn-line" data-i18n="set.lineTest"></button>
+        <div class="set-row" id="rowLineExtra" style="display:block">
+          <button id="btnLineManual" class="link-btn" data-i18n="line.manual"></button>
+          <div id="lineManualBox" class="hidden" style="margin-top:10px">
+            <input id="lineTarget" class="input" type="text" placeholder="LINE userId / groupId" style="margin-bottom:8px"/>
+            <div class="field-inline">
+              <button id="btnSaveLine" class="btn btn-ghost" data-i18n="common.save"></button>
+              <button id="btnTestLine" class="btn btn-line" data-i18n="set.lineTest"></button>
+            </div>
           </div>
         </div>
         <div class="set-row">
@@ -687,6 +714,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
@@ -702,6 +730,10 @@ const FIREBASE_CONFIG = {
   appId: "1:894848215746:web:233a03093972892f38695b"
 };
 const LINE_WEBHOOK_URL = "PASTE_HERE";
+
+/* กุญแจสำหรับแจ้งเตือนแบบ Push (ฟรี ไม่จำกัดจำนวน)
+   หาได้ที่ Firebase Console > Project settings > Cloud Messaging > Web Push certificates */
+const VAPID_KEY = "BHn9QPjnHilUkvfwfH0vP7ft_FuJmmeR-APgCWODOtKi6qgSdzaWe6EeG9qiv3WE5EEYPBGuiEmvBaXkBp61Pgo";
 
 /* ลิมิต Free — นับเฉพาะ "งานที่ยังไม่เสร็จ" (งานที่เสร็จแล้วเก็บได้ไม่จำกัด) */
 const FREE_LIMITS = { profiles: 1, activeTasks: 30 };
@@ -727,6 +759,8 @@ th:{
  "quickadd.ph":"จดงานเร็ว ๆ แล้วกด Enter","search.ph":"ค้นหางาน…","search.results":"ผลการค้นหา",
  "search.none":"ไม่พบงานที่ตรงกับคำค้น",
  "group.overdue":"เลยกำหนด","group.today":"วันนี้","group.noDate":"ยังไม่กำหนดวัน",
+ "nodate.chip":"{n} งานยังไม่กำหนดวัน","nodate.back":"← กลับไปหน้าวันนี้",
+ "nodate.none":"ทุกงานมีกำหนดวันแล้ว 🎉",
  "empty.title":"ยังไม่มีงานวันนี้","empty.desc":"พิมพ์ในช่องด้านบน หรือกดปุ่ม + เพื่อจดงานแรก",
  "st.pending":"รอทำ","st.doing":"กำลังทำ","st.done":"เสร็จ",
  "cal.month":"เดือน","cal.week":"สัปดาห์",
@@ -739,10 +773,26 @@ th:{
  "export.aiBtn":"สร้างสรุปด้วย AI","export.none":"ไม่มีงานในช่วงที่เลือก","export.done":"ดาวน์โหลด Excel แล้ว",
  "set.language":"ภาษา","set.langTitle":"ภาษาของแอป","set.account":"บัญชี","set.plan":"แพ็กเกจ",
  "set.profiles":"โปรไฟล์บุคคล","set.addProfile":"+ เพิ่มโปรไฟล์","set.line":"การแจ้งเตือน LINE",
- "set.lineConnect":"เชื่อมต่อ LINE","set.lineNo":"ยังไม่ได้เชื่อม — วาง LINE User/Group ID",
+ "set.notify":"การแจ้งเตือน",
+ "push.title":"แจ้งเตือนบนเครื่องนี้","push.on":"✓ เปิดอยู่ — เตือนได้แม้ปิดแอป (ฟรี)",
+ "push.off":"ปิดอยู่ — เปิดเพื่อรับแจ้งเตือนบนเครื่องนี้ ไม่มีค่าใช้จ่าย",
+ "push.unsupported":"เบราว์เซอร์นี้ยังไม่รองรับ — บน iPhone ต้องติดตั้งแอปลงหน้าจอโฮมก่อน",
+ "push.denied":"คุณปิดการแจ้งเตือนไว้ — เปิดได้ในตั้งค่าของเบราว์เซอร์",
+ "push.noKey":"ยังไม่ได้ตั้งค่ากุญแจแจ้งเตือน (VAPID) ในไฟล์แอป",
+ "push.enabled":"เปิดแจ้งเตือนบนเครื่องนี้แล้ว","push.disabled":"ปิดแจ้งเตือนบนเครื่องนี้แล้ว",
+ "push.fail":"เปิดแจ้งเตือนไม่สำเร็จ ลองใหม่อีกครั้ง",
+ "line.connectBtn":"เชื่อมต่อ","line.disconnect":"ยกเลิก","line.manual":"หรือวาง ID เอง",
+ "line.linkTitle":"เชื่อมต่อ LINE","line.linkStep1":"เพิ่มบอทเป็นเพื่อนใน LINE ก่อน (สแกน QR ของบอท)",
+ "line.linkStep2":"พิมพ์รหัสนี้ส่งในแชทบอท",
+ "line.linkStep3":"รอสักครู่ ระบบจะเชื่อมให้เอง หน้านี้จะปิดอัตโนมัติ",
+ "line.linkExpire":"รหัสหมดอายุใน {m} นาที","line.linkWaiting":"กำลังรอ…",
+ "line.linked":"เชื่อมต่อ LINE สำเร็จแล้ว","line.unlinked":"ยกเลิกการเชื่อมต่อแล้ว",
+ "line.groupTip":"อยากให้เตือนเข้ากลุ่ม? เชิญบอทเข้ากลุ่มแล้วพิมพ์รหัสในกลุ่มนั้นแทน",
+ "line.codeFail":"สร้างรหัสไม่สำเร็จ ลองใหม่อีกครั้ง",
+ "set.lineConnect":"เชื่อมต่อ LINE","set.lineNo":"ยังไม่ได้เชื่อม — กดเชื่อมต่อ แล้วพิมพ์รหัสในแชทบอท",
  "set.lineYes":"✓ เชื่อมแล้ว","set.lineTest":"ทดสอบส่ง","set.lineSaved":"บันทึก LINE ID แล้ว",
  "set.lineNeedId":"กรอก LINE ID ก่อน","set.lineSent":"ส่งข้อความทดสอบแล้ว",
- "set.dailyBrief":"สรุปงานตอนเช้า","set.dailyBriefSub":"ส่งสรุปงานวันนี้เข้า LINE ทุกเช้า 08:00",
+ "set.dailyBrief":"สรุปงานตอนเช้า","set.dailyBriefSub":"ส่งสรุปงานวันนี้ทุกเช้า 08:00 ผ่านช่องทางที่เปิดไว้",
  "set.logout":"ออกจากระบบ","set.logoutQ":"ออกจากระบบ?",
  "set.deleteAccount":"ลบบัญชีและข้อมูลทั้งหมด","set.deleteAccountSub":"ลบถาวร กู้คืนไม่ได้",
  "set.delAccQ":"ลบบัญชีถาวร?","set.delAccMsg":"งาน โปรไฟล์ และข้อมูลทั้งหมดจะถูกลบถาวร กู้คืนไม่ได้",
@@ -797,6 +847,8 @@ en:{
  "quickadd.ph":"Jot a task, press Enter","search.ph":"Search tasks…","search.results":"Search results",
  "search.none":"No tasks match your search",
  "group.overdue":"Overdue","group.today":"Today","group.noDate":"No date set",
+ "nodate.chip":"{n} without a date","nodate.back":"← Back to Today",
+ "nodate.none":"Everything has a date 🎉",
  "empty.title":"Nothing due today","empty.desc":"Type above or tap + to jot your first task",
  "st.pending":"To do","st.doing":"Doing","st.done":"Done",
  "cal.month":"Month","cal.week":"Week",
@@ -809,10 +861,26 @@ en:{
  "export.aiBtn":"Generate AI summary","export.none":"No tasks in the selected range","export.done":"Excel downloaded",
  "set.language":"Language","set.langTitle":"App language","set.account":"Account","set.plan":"Plan",
  "set.profiles":"Profiles","set.addProfile":"+ Add profile","set.line":"LINE notifications",
- "set.lineConnect":"Connect LINE","set.lineNo":"Not connected — paste a LINE User/Group ID",
+ "set.notify":"Notifications",
+ "push.title":"Notify on this device","push.on":"✓ On — works even when the app is closed (free)",
+ "push.off":"Off — turn on to get alerts on this device, at no cost",
+ "push.unsupported":"This browser doesn't support it — on iPhone, add the app to your Home Screen first",
+ "push.denied":"Notifications are blocked — enable them in your browser settings",
+ "push.noKey":"The push key (VAPID) hasn't been set in the app file",
+ "push.enabled":"Notifications enabled on this device","push.disabled":"Notifications turned off on this device",
+ "push.fail":"Couldn't enable notifications — try again",
+ "line.connectBtn":"Connect","line.disconnect":"Disconnect","line.manual":"Or paste an ID manually",
+ "line.linkTitle":"Connect LINE","line.linkStep1":"Add the bot as a friend on LINE first (scan its QR code)",
+ "line.linkStep2":"Send this code in the chat with the bot",
+ "line.linkStep3":"Wait a moment — it links automatically and this closes itself",
+ "line.linkExpire":"Code expires in {m} min","line.linkWaiting":"Waiting…",
+ "line.linked":"LINE connected","line.unlinked":"LINE disconnected",
+ "line.groupTip":"Want alerts in a group? Invite the bot to the group and send the code there instead",
+ "line.codeFail":"Couldn't create a code — try again",
+ "set.lineConnect":"Connect LINE","set.lineNo":"Not connected — tap Connect, then send the code to the bot",
  "set.lineYes":"✓ Connected","set.lineTest":"Send test","set.lineSaved":"LINE ID saved",
  "set.lineNeedId":"Enter a LINE ID first","set.lineSent":"Test message sent",
- "set.dailyBrief":"Morning brief","set.dailyBriefSub":"Send today's tasks to LINE every morning at 08:00",
+ "set.dailyBrief":"Morning brief","set.dailyBriefSub":"Send today's tasks every morning at 08:00 via your enabled channels",
  "set.logout":"Sign out","set.logoutQ":"Sign out?",
  "set.deleteAccount":"Delete account and all data","set.deleteAccountSub":"Permanent, cannot be undone",
  "set.delAccQ":"Delete account permanently?","set.delAccMsg":"All tasks, profiles and data will be permanently deleted",
@@ -884,7 +952,8 @@ let profiles=[], currentProfileId=null, tasks=[], allTasks=[];
 let unsubProfiles=null, unsubTasks=null;
 let editingId=null, editPhotoFile=null, editPhotoUrl=null, editPhotoPath=null;
 let editStatus='pending', editRemindMin=0, editRepeat='none', editSubs=[];
-let calMode='month', calCursor=new Date(), authMode='login', searchTerm='';
+let calMode='month', calCursor=new Date(), authMode='login', searchTerm='', noDateOnly=false;
+let messaging=null, unsubUser=null, linkTimer=null;
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const isConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey!=="PASTE_HERE";
 
@@ -897,6 +966,7 @@ function boot(){
   }
   firebase.initializeApp(FIREBASE_CONFIG);
   auth=firebase.auth(); db=firebase.firestore(); storage=firebase.storage();
+  try{ if(firebase.messaging.isSupported()) messaging=firebase.messaging(); }catch(e){ messaging=null; }
   // ── ออฟไลน์: เปิดก่อนใช้งาน Firestore อื่น ๆ ──
   db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   auth.onAuthStateChanged(onAuthChange);
@@ -919,7 +989,7 @@ function onAuthChange(user){
     bootstrapUser(user);
   }else{
     uid=null; userDoc=null; profiles=[]; tasks=[]; allTasks=[];
-    if(unsubProfiles) unsubProfiles(); if(unsubTasks) unsubTasks();
+    if(unsubProfiles) unsubProfiles(); if(unsubTasks) unsubTasks(); if(unsubUser) unsubUser();
     $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden');
   }
 }
@@ -992,10 +1062,25 @@ async function bootstrapUser(user){
     currentProfileId=p.id; await ref.update({currentProfileId});
   }else currentProfileId = userDoc.currentProfileId || profSnap.docs[0].id;
 
-  listenProfiles(); listenTasks(); updateVerifyBanner(user);
-  $('#togDaily').checked = !!userDoc.dailyBrief; paintToggle();
+  listenProfiles(); listenTasks(); listenUserDoc(); updateVerifyBanner(user);
+  $('#togDaily').checked = !!userDoc.dailyBrief; paintToggles();
   purgeOldTrash();
 }
+function listenUserDoc(){
+  if(unsubUser) unsubUser();
+  unsubUser = db.collection('users').doc(uid).onSnapshot(d=>{
+    if(!d.exists) return;
+    const before = userDoc||{};
+    userDoc = d.data();
+    // บอทเชื่อม LINE ให้สำเร็จ → ปิดหน้ารหัสอัตโนมัติ
+    if(!before.lineTarget && userDoc.lineTarget && $('#linkCodeBox')){
+      closeSheet(); toast(t('line.linked'));
+    }
+    $('#togDaily').checked = !!userDoc.dailyBrief;
+    renderSettings(); paintToggles();
+  });
+}
+
 function listenProfiles(){
   if(unsubProfiles) unsubProfiles();
   unsubProfiles=db.collection('users').doc(uid).collection('profiles').orderBy('createdAt')
@@ -1068,6 +1153,7 @@ function renderToday(){
   const now=new Date();
   $('#todayDate').textContent = now.toLocaleDateString(locale(),{weekday:'long',day:'numeric',month:'long'});
   if(searchTerm){
+    renderNoDateBar(0);   // ซ่อนแถบระหว่างค้นหา
     const q=searchTerm.toLowerCase();
     const res=tasks.filter(x=>[x.title,x.detail,x.category,x.involved,x.place]
       .filter(Boolean).some(v=>v.toLowerCase().includes(q))).sort(byDue);
@@ -1080,15 +1166,37 @@ function renderToday(){
   const e=new Date(now); e.setHours(23,59,59,999);
   const over=tasks.filter(isOverdue);
   const today=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()>=s&&x.dueAt.toDate()<=e&&!isOverdue(x));
-  const noDate=tasks.filter(x=>!x.dueAt&&x.status!=='done');
+  // งานที่ยังไม่กำหนดวัน — แสดงทุกสถานะ หายก็ต่อเมื่อกดลบเท่านั้น
+  // (งานที่ทำเสร็จแล้วเลื่อนไปอยู่ท้ายกลุ่ม)
+  const noDate=tasks.filter(x=>!x.dueAt).sort((a,b)=>
+    (a.status==='done'?1:0)-(b.status==='done'?1:0));
+  renderNoDateBar(noDate.filter(x=>x.status!=='done').length);
+
   let h='';
+  if(noDateOnly){
+    h = noDate.length
+      ? `<div class="day-label">${t('group.noDate')} · ${noDate.length}</div>`+noDate.map(taskCardHTML).join('')
+      : `<div class="empty"><h3>${t('nodate.none')}</h3></div>`;
+    $('#todayList').innerHTML=h;
+    return;
+  }
   if(over.length) h+=`<div class="day-label" style="color:var(--danger)">${t('group.overdue')}</div>`+over.sort(byDue).map(taskCardHTML).join('');
   if(today.length) h+=`<div class="day-label">${t('group.today')}</div>`+today.sort(byDue).map(taskCardHTML).join('');
-  if(noDate.length) h+=`<div class="day-label">${t('group.noDate')}</div>`+noDate.map(taskCardHTML).join('');
+  if(noDate.length) h+=`<div class="day-label">${t('group.noDate')} · ${noDate.length}</div>`+noDate.map(taskCardHTML).join('');
   if(!h) h=`<div class="empty"><div class="em-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
     <h3>${t('empty.title')}</h3><p>${t('empty.desc')}</p></div>`;
   $('#todayList').innerHTML=h;
 }
+function renderNoDateBar(n){
+  const bar=$('#noDateBar');
+  if(!bar) return;
+  // ซ่อนตอนค้นหา หรือเมื่อไม่มีงานค้างที่ยังไม่กำหนดวัน
+  if(searchTerm || (n===0 && !noDateOnly)){ bar.classList.add('hidden'); noDateOnly=false; return; }
+  bar.classList.remove('hidden');
+  $('#noDateText').textContent = noDateOnly ? t('nodate.back') : t('nodate.chip',{n});
+  $('#noDateChip').classList.toggle('active', noDateOnly);
+}
+
 function renderCatList(){
   const cats=[...new Set(liveTasks().map(x=>x.category).filter(Boolean))];
   $('#catList').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
@@ -1167,15 +1275,27 @@ function renderSettings(){
   $('#profileList').innerHTML=profiles.map(p=>
     `<div class="profile-item" data-pid="${p.id}"><span class="pi-dot" style="background:${p.color||'#4A9EF6'}"></span>
       <span class="pi-name">${esc(p.name)}</span>${p.id===currentProfileId?`<span class="pi-cur">${t('prof.current')}</span>`:''}</div>`).join('');
-  $('#lineTarget').value=(userDoc&&userDoc.lineTarget)||'';
-  $('#lineStatus').textContent=(userDoc&&userDoc.lineTarget)? t('set.lineYes'):t('set.lineNo');
+  const lt=(userDoc&&userDoc.lineTarget)||'';
+  $('#lineTarget').value=lt;
+  $('#lineStatus').textContent= lt? t('set.lineYes') : t('set.lineNo');
+  $('#btnLinkLine').textContent = lt? t('line.disconnect') : t('line.connectBtn');
+  $('#btnLinkLine').className = 'btn '+(lt?'btn-danger':'btn-ghost');
+  $('#btnLinkLine').style.cssText='padding:9px 14px;font-size:13.5px';
+  $('#pushStatus').textContent = !pushSupported()? t('push.unsupported')
+    : (pushIsOn()? t('push.on') : t('push.off'));
+  $('#togPush').checked = pushIsOn();
+  $('#togPush').disabled = !pushSupported();
   $('#trashCount').textContent=t('trash.count',{n:trashed().length});
 }
 function updateVerifyBanner(u){ $('#verifyBanner').style.display=u.emailVerified?'none':'flex'; }
-function paintToggle(){
-  const on=$('#togDaily').checked, ui=$('#togDailyUI');
-  ui.style.background=on?'var(--brand)':'var(--line-strong)';
-  ui.innerHTML=`<span style="position:absolute;top:3px;left:${on?'21px':'3px'};width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>`;
+function paintToggles(){
+  [['#togDaily','#togDailyUI'],['#togPush','#togPushUI']].forEach(([cb,ui])=>{
+    const c=$(cb), u=$(ui); if(!c||!u) return;
+    const on=c.checked;
+    u.style.background = c.disabled? 'var(--line)' : (on?'var(--brand)':'var(--line-strong)');
+    u.style.opacity = c.disabled? '.5':'1';
+    u.innerHTML=`<span style="position:absolute;top:3px;left:${on?'21px':'3px'};width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>`;
+  });
 }
 
 /* ╔════════════════════════════════════════════════════════════╗
@@ -1266,10 +1386,8 @@ async function saveTask(){
       if(up) await col.doc(taskId).update({photoUrl:up.url, photoPath:up.path});
     }
     toast(editingId? t('ed.saved'):t('ed.added'));
-    if(!editingId){
-      const dueTxt=due? ` · ${t('line.due')} ${due.toLocaleString(locale(),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'';
-      notifyLine(`${t('line.newTask')}: ${title}${dueTxt}`);
-    }else if(editStatus==='done') notifyLine(`${t('line.done')}: ${title}`);
+    // หมายเหตุ: ไม่ส่ง LINE ตอนเพิ่ม/ปิดงาน เพื่อประหยัดโควตาข้อความ
+    // การแจ้งเตือนจริงมาจากฝั่งเซิร์ฟเวอร์ (เตือนก่อนกำหนด + สรุปเช้า)
     closeEditor();
   }catch(e){ console.error(e); toast(t('ed.saveFail'),true); }
   finally{ $('#edSave').disabled=false; }
@@ -1326,10 +1444,7 @@ async function cycleStatus(id){
     await db.collection('users').doc(uid).collection('tasks').doc(id).update({
       status:next, updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
       history:(x.history||[]).concat([{at:Date.now(),type:'status',from:x.status,to:next}])});
-    if(next==='done'){
-      notifyLine(`${t('line.done')}: ${x.title}`);
-      if(x.repeat&&x.repeat!=='none') await spawnNext(x);
-    }
+    if(next==='done' && x.repeat && x.repeat!=='none') await spawnNext(x);
   }catch(e){ toast(t('common.fail'),true); }
 }
 /* ── งานประจำ: สร้างรอบถัดไปเมื่อปิดงาน ── */
@@ -1465,6 +1580,89 @@ function notifyLine(text){
   fetch(LINE_WEBHOOK_URL,{method:'POST',mode:'no-cors',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({to,message:text})}).catch(()=>{});
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 9b) Push notification (ฟรี ไม่จำกัดจำนวน)                    ║
+   ╚════════════════════════════════════════════════════════════╝ */
+function pushSupported(){
+  return !!messaging && 'Notification' in window && 'serviceWorker' in navigator;
+}
+async function enablePush(){
+  if(!pushSupported()){ toast(t('push.unsupported'),true); return false; }
+  if(!VAPID_KEY || VAPID_KEY==='PASTE_HERE'){ toast(t('push.noKey'),true); return false; }
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted'){ toast(t('push.denied'),true); return false; }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await messaging.getToken({vapidKey:VAPID_KEY, serviceWorkerRegistration:reg});
+    if(!token){ toast(t('push.fail'),true); return false; }
+    await db.collection('users').doc(uid).update({
+      pushTokens: firebase.firestore.FieldValue.arrayUnion(token)
+    });
+    localStorage.setItem('jw_push_token', token);
+    toast(t('push.enabled'));
+    return true;
+  }catch(e){ console.error(e); toast(t('push.fail'),true); return false; }
+}
+async function disablePush(){
+  const tk = localStorage.getItem('jw_push_token');
+  try{
+    if(tk) await db.collection('users').doc(uid).update({
+      pushTokens: firebase.firestore.FieldValue.arrayRemove(tk)
+    });
+    if(messaging) await messaging.deleteToken().catch(()=>{});
+  }catch(e){}
+  localStorage.removeItem('jw_push_token');
+  toast(t('push.disabled'));
+}
+function pushIsOn(){
+  const tk=localStorage.getItem('jw_push_token');
+  return !!tk && Array.isArray(userDoc&&userDoc.pushTokens) && userDoc.pushTokens.includes(tk)
+         && ('Notification' in window) && Notification.permission==='granted';
+}
+
+/* ╔════════════════════════════════════════════════════════════╗
+   ║ 9c) เชื่อม LINE ด้วยรหัส 6 หลัก                              ║
+   ╚════════════════════════════════════════════════════════════╝ */
+async function startLineLink(){
+  const code = String(Math.floor(100000 + Math.random()*900000));
+  const mins = 10;
+  try{
+    await db.collection('users').doc(uid).update({
+      lineLinkCode:{ code, expiresAt: Date.now() + mins*60000 }
+    });
+  }catch(e){ toast(t('line.codeFail'),true); return; }
+
+  openSheet(`<div class="sheet-grip"></div><h3>${t('line.linkTitle')}</h3>
+    <div class="sh-sub">${t('line.linkStep1')}</div>
+    <div style="text-align:center;margin:6px 0 4px" id="linkCodeBox">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">${t('line.linkStep2')}</div>
+      <div style="font-family:Kanit,sans-serif;font-size:40px;font-weight:700;letter-spacing:8px;
+        color:var(--brand-dark);background:var(--brand-tint);border-radius:14px;padding:14px 10px">${code}</div>
+      <div style="font-size:12.5px;color:var(--faint);margin-top:8px" id="linkExpire"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;justify-content:center;
+      font-size:13px;color:var(--muted);margin:14px 0 4px">
+      <span class="spinner" style="width:16px;height:16px;border-width:2px"></span>
+      ${t('line.linkStep3')}
+    </div>
+    <div style="font-size:12.5px;color:var(--faint);background:var(--brand-tint2);
+      border-radius:10px;padding:10px 12px;margin-top:14px">${t('line.groupTip')}</div>
+    <button class="btn btn-line btn-block" id="linkClose" style="margin-top:12px">${t('common.cancel')}</button>`);
+
+  let left = mins*60;
+  const tick=()=>{
+    const el=$('#linkExpire'); if(!el){ clearInterval(linkTimer); return; }
+    el.textContent = t('line.linkExpire',{m:Math.max(0,Math.ceil(left/60))});
+    if(--left<0){ clearInterval(linkTimer); closeSheet(); }
+  };
+  clearInterval(linkTimer); tick(); linkTimer=setInterval(tick,1000);
+  $('#linkClose').onclick=()=>{ clearInterval(linkTimer); closeSheet(); };
+}
+async function unlinkLine(){
+  await db.collection('users').doc(uid).update({lineTarget:'', lineLinkCode:null});
+  toast(t('line.unlinked'));
 }
 
 /* ╔════════════════════════════════════════════════════════════╗
@@ -1641,6 +1839,7 @@ function bindEvents(){
     $('#searchClear').classList.toggle('show',!!searchTerm);
     renderToday();
   });
+  $('#noDateChip').onclick=()=>{ noDateOnly=!noDateOnly; renderToday(); window.scrollTo(0,0); };
   $('#searchClear').onclick=()=>{ searchTerm=''; $('#searchInput').value='';
     $('#searchClear').classList.remove('show'); renderToday(); };
 
@@ -1705,12 +1904,27 @@ function bindEvents(){
     userDoc.lineTarget=v; notifyLine(t('line.test')); toast(t('set.lineSent'));
   };
   $('#togDaily').onchange=async e=>{
-    paintToggle();
+    paintToggles();
     await db.collection('users').doc(uid).update({dailyBrief:e.target.checked});
     userDoc.dailyBrief=e.target.checked;
   };
   $('#togDailyUI').onclick=()=>{ $('#togDaily').checked=!$('#togDaily').checked;
     $('#togDaily').dispatchEvent(new Event('change')); };
+
+  // สวิตช์แจ้งเตือนบนเครื่อง
+  $('#togPushUI').onclick=async ()=>{
+    const c=$('#togPush'); if(c.disabled){ toast(t('push.unsupported'),true); return; }
+    if(c.checked){ await disablePush(); } else { await enablePush(); }
+    renderSettings(); paintToggles();
+  };
+
+  // เชื่อม / ยกเลิกเชื่อม LINE
+  $('#btnLinkLine').onclick=()=>{
+    if(userDoc && userDoc.lineTarget)
+      showConfirm(t('line.disconnect'),'',()=>unlinkLine());
+    else startLineLink();
+  };
+  $('#btnLineManual').onclick=()=>{ $('#lineManualBox').classList.toggle('hidden'); };
 
   $('#sheetBackdrop').onclick=e=>{ if(e.target.id==='sheetBackdrop') closeSheet(); };
 
