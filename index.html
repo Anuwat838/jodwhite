@@ -547,10 +547,10 @@
         <div class="set-row">
           <div class="sr-main"><div class="sr-title" data-i18n="push.title"></div>
             <div class="sr-sub" id="pushStatus"></div></div>
-          <label style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
-            <input id="togPush" type="checkbox" style="opacity:0;width:0;height:0"/>
+          <div style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
+            <input id="togPush" type="checkbox" style="display:none"/>
             <span id="togPushUI" style="position:absolute;inset:0;background:var(--line-strong);border-radius:20px;transition:.2s;cursor:pointer"></span>
-          </label>
+          </div>
         </div>
         <div class="set-row">
           <div class="sr-main"><div class="sr-title" data-i18n="set.lineConnect"></div>
@@ -570,10 +570,10 @@
         <div class="set-row">
           <div class="sr-main"><div class="sr-title" data-i18n="set.dailyBrief"></div>
             <div class="sr-sub" data-i18n="set.dailyBriefSub"></div></div>
-          <label style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
-            <input id="togDaily" type="checkbox" style="opacity:0;width:0;height:0"/>
+          <div style="position:relative;display:inline-block;width:44px;height:26px;flex:none">
+            <input id="togDaily" type="checkbox" style="display:none"/>
             <span id="togDailyUI" style="position:absolute;inset:0;background:var(--line-strong);border-radius:20px;transition:.2s;cursor:pointer"></span>
-          </label>
+          </div>
         </div>
       </div>
 
@@ -1903,13 +1903,13 @@ function bindEvents(){
     if(!v){ toast(t('set.lineNeedId'),true); return; }
     userDoc.lineTarget=v; notifyLine(t('line.test')); toast(t('set.lineSent'));
   };
-  $('#togDaily').onchange=async e=>{
-    paintToggles();
-    await db.collection('users').doc(uid).update({dailyBrief:e.target.checked});
-    userDoc.dailyBrief=e.target.checked;
+  $('#togDailyUI').onclick=async ()=>{
+    const c=$('#togDaily'); c.checked=!c.checked;
+    paintToggles();                       // วาดสีทันทีก่อน ให้เห็นผลเลย
+    userDoc.dailyBrief=c.checked;
+    try{ await db.collection('users').doc(uid).update({dailyBrief:c.checked}); }
+    catch(err){ toast(t('common.fail'),true); }
   };
-  $('#togDailyUI').onclick=()=>{ $('#togDaily').checked=!$('#togDaily').checked;
-    $('#togDaily').dispatchEvent(new Event('change')); };
 
   // สวิตช์แจ้งเตือนบนเครื่อง
   $('#togPushUI').onclick=async ()=>{

@@ -1,6 +1,6 @@
 /* JodWhite service worker — network-first strategy
    หมายเหตุ: เมื่อแก้แอปแล้วต้องการบังคับอัปเดต ให้เปลี่ยนเลข cache ด้านล่าง (เช่น jodwhite-v2) */
-const CACHE = "jodwhite-v7";
+const CACHE = "jodwhite-v8";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
