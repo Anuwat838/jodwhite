@@ -1,6 +1,6 @@
 /* JodWhite service worker — network-first strategy
    หมายเหตุ: เมื่อแก้แอปแล้วต้องการบังคับอัปเดต ให้เปลี่ยนเลข cache ด้านล่าง (เช่น jodwhite-v2) */
-const CACHE = "jodwhite-v8";
+const CACHE = "jodwhite-v9";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
@@ -63,11 +63,18 @@ self.addEventListener("push", e => {
                  (payload.fcm_options && payload.fcm_options.link) ||
                  n.link || "./index.html" }
   };
-  e.waitUntil(self.registration.showNotification(title, options));
+  e.waitUntil(
+    self.registration.showNotification(title, options).then(() => {
+      // ตั้งตัวเลขแดงบนไอคอน (ถ้าเบราว์เซอร์รองรับ)
+      if (self.registration.setAppBadge) self.registration.setAppBadge().catch(() => {});
+    })
+  );
 });
 
 self.addEventListener("notificationclick", e => {
   e.notification.close();
+  // กดดูแล้ว = ล้างตัวเลขแดงทันที
+  if (self.registration.clearAppBadge) self.registration.clearAppBadge().catch(() => {});
   const url = (e.notification.data && e.notification.data.url) || "./index.html";
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
@@ -77,4 +84,11 @@ self.addEventListener("notificationclick", e => {
       return clients.openWindow(url);
     })
   );
+});
+
+// แอปสั่งล้างตัวเลขแดง (ตอนเปิดแอปหรือกลับมาโฟกัส)
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "clearBadge" && self.registration.clearAppBadge) {
+    self.registration.clearAppBadge().catch(() => {});
+  }
 });

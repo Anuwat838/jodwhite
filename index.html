@@ -975,6 +975,18 @@ function boot(){
   window.addEventListener('online', updateOnline);
   window.addEventListener('offline', updateOnline);
   updateOnline();
+  clearBadge();
+  // ล้างตัวเลขแดงทุกครั้งที่กลับมาเปิดแอป (เช่นสลับกลับจากแอปอื่น)
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) clearBadge(); });
+}
+// ล้างตัวเลขแจ้งเตือนบนไอคอนแอป (App Badge API — Android/Chrome/PWA รองรับ)
+function clearBadge(){
+  try{ if(navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{}); }catch(e){}
+  // แจ้ง service worker ให้ล้างฝั่งมันด้วย (กันตัวเลขค้างจาก notification เดิม)
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.controller)
+      navigator.serviceWorker.controller.postMessage({type:'clearBadge'});
+  }catch(e){}
 }
 function updateOnline(){ $('#offlineChip').classList.toggle('show', !navigator.onLine); }
 
