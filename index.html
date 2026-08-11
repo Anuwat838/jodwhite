@@ -191,6 +191,12 @@
   .empty p{margin:0;font-size:13.5px}
   .day-label{font-size:12px;font-weight:700;color:var(--faint);text-transform:uppercase;
     letter-spacing:.6px;margin:16px 2px 8px}
+  .sub-day{font-size:12.5px;font-weight:600;color:var(--brand-dark);margin:10px 2px 6px}
+  .done-toggle{display:flex;align-items:center;gap:7px;width:100%;margin:18px 0 4px;padding:6px 2px;
+    font-size:12px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.6px}
+  .done-toggle .chev{width:15px;height:15px;transition:transform .2s}
+  .done-toggle.open .chev{transform:rotate(180deg)}
+  .done-wrap{animation:fade .2s ease}
 
   /* ── FAB + nav ── */
   .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + var(--safe-b));
@@ -759,6 +765,8 @@ th:{
  "quickadd.ph":"จดงานเร็ว ๆ แล้วกด Enter","search.ph":"ค้นหางาน…","search.results":"ผลการค้นหา",
  "search.none":"ไม่พบงานที่ตรงกับคำค้น",
  "group.overdue":"เลยกำหนด","group.today":"วันนี้","group.noDate":"ยังไม่กำหนดวัน",
+ "group.upcoming":"งาน 3 วันข้างหน้า","day.tomorrow":"พรุ่งนี้","day.dayAfter":"มะรืนนี้",
+ "group.doneToday":"เสร็จแล้ววันนี้",
  "nodate.chip":"{n} งานยังไม่กำหนดวัน","nodate.back":"← กลับไปหน้าวันนี้",
  "nodate.none":"ทุกงานมีกำหนดวันแล้ว 🎉",
  "empty.title":"ยังไม่มีงานวันนี้","empty.desc":"พิมพ์ในช่องด้านบน หรือกดปุ่ม + เพื่อจดงานแรก",
@@ -847,6 +855,8 @@ en:{
  "quickadd.ph":"Jot a task, press Enter","search.ph":"Search tasks…","search.results":"Search results",
  "search.none":"No tasks match your search",
  "group.overdue":"Overdue","group.today":"Today","group.noDate":"No date set",
+ "group.upcoming":"Next 3 days","day.tomorrow":"Tomorrow","day.dayAfter":"In 2 days",
+ "group.doneToday":"Completed today",
  "nodate.chip":"{n} without a date","nodate.back":"← Back to Today",
  "nodate.none":"Everything has a date 🎉",
  "empty.title":"Nothing due today","empty.desc":"Type above or tap + to jot your first task",
@@ -952,7 +962,7 @@ let profiles=[], currentProfileId=null, tasks=[], allTasks=[];
 let unsubProfiles=null, unsubTasks=null;
 let editingId=null, editPhotoFile=null, editPhotoUrl=null, editPhotoPath=null;
 let editStatus='pending', editRemindMin=0, editRepeat='none', editSubs=[];
-let calMode='month', calCursor=new Date(), authMode='login', searchTerm='', noDateOnly=false;
+let calMode='month', calCursor=new Date(), authMode='login', searchTerm='', noDateOnly=false, doneExpanded=false;
 let messaging=null, unsubUser=null, linkTimer=null;
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const isConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey!=="PASTE_HERE";
@@ -1133,6 +1143,14 @@ function isOverdue(t2){ return t2.status!=='done' && t2.dueAt&&t2.dueAt.toMillis
 function fmtTime(ts){ if(!ts||!ts.toDate)return''; return ts.toDate().toLocaleTimeString(locale(),{hour:'2-digit',minute:'2-digit'}); }
 function fmtDate(ts){ if(!ts||!ts.toDate)return''; return ts.toDate().toLocaleDateString(locale(),{day:'numeric',month:'short'}); }
 function dayKey(d){ return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); }
+// ป้ายวันแบบสัมพัทธ์: พรุ่งนี้ / มะรืนนี้ / ชื่อวัน + วันที่
+function relDayLabel(d){
+  const now=new Date(); const t0=new Date(now); t0.setHours(0,0,0,0);
+  const diff=Math.round((new Date(d).setHours(0,0,0,0)-t0)/86400000);
+  if(diff===1) return t('day.tomorrow');
+  if(diff===2 && LANG==='th') return t('day.dayAfter');
+  return d.toLocaleDateString(locale(),{weekday:'long',day:'numeric',month:'short'});
+}
 function byDue(a,b){ const am=a.dueAt&&a.dueAt.toMillis?a.dueAt.toMillis():Infinity;
   const bm=b.dueAt&&b.dueAt.toMillis?b.dueAt.toMillis():Infinity; return am-bm; }
 
@@ -1177,9 +1195,22 @@ function renderToday(){
   const s=new Date(now); s.setHours(0,0,0,0);
   const e=new Date(now); e.setHours(23,59,59,999);
   const over=tasks.filter(isOverdue);
-  const today=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()>=s&&x.dueAt.toDate()<=e&&!isOverdue(x));
+  // งานวันนี้ที่ "ยังไม่เสร็จ" (งานเสร็จแยกไปกลุ่มพับด้านล่าง)
+  const today=tasks.filter(x=>x.dueAt&&x.dueAt.toDate&&x.dueAt.toDate()>=s&&x.dueAt.toDate()<=e
+    && !isOverdue(x) && x.status!=='done');
+  // งาน 3 วันข้างหน้า (พรุ่งนี้ถึงอีก 3 วัน) — ยังไม่เสร็จ เรียงตามกำหนด
+  const upEnd=new Date(now); upEnd.setDate(upEnd.getDate()+3); upEnd.setHours(23,59,59,999);
+  const upcoming=tasks.filter(x=>x.dueAt&&x.dueAt.toDate
+    && x.dueAt.toDate()>e && x.dueAt.toDate()<=upEnd
+    && x.status!=='done').sort(byDue);
+  // งานที่เสร็จแล้ววันนี้ (มีวันกำหนดในวันนี้ หรือปิดงานวันนี้) — รวมไว้กลุ่มพับล่างสุด
+  const doneToday=tasks.filter(x=>x.status==='done' && x.dueAt && x.dueAt.toDate
+    && ((x.dueAt.toDate()>=s && x.dueAt.toDate()<=e)
+        || (x.updatedAt&&x.updatedAt.toDate&&x.updatedAt.toDate()>=s&&x.updatedAt.toDate()<=e)))
+    .sort((a,b)=>{const am=a.updatedAt&&a.updatedAt.toMillis?a.updatedAt.toMillis():0;
+      const bm=b.updatedAt&&b.updatedAt.toMillis?b.updatedAt.toMillis():0; return bm-am;});
   // งานที่ยังไม่กำหนดวัน — แสดงทุกสถานะ หายก็ต่อเมื่อกดลบเท่านั้น
-  // (งานที่ทำเสร็จแล้วเลื่อนไปอยู่ท้ายกลุ่ม)
+  // (งานที่ทำเสร็จแล้วเลื่อนไปอยู่ท้ายกลุ่ม ตามที่ตกลงไว้ ไม่ย้ายไปกลุ่มพับ)
   const noDate=tasks.filter(x=>!x.dueAt).sort((a,b)=>
     (a.status==='done'?1:0)-(b.status==='done'?1:0));
   renderNoDateBar(noDate.filter(x=>x.status!=='done').length);
@@ -1194,7 +1225,26 @@ function renderToday(){
   }
   if(over.length) h+=`<div class="day-label" style="color:var(--danger)">${t('group.overdue')}</div>`+over.sort(byDue).map(taskCardHTML).join('');
   if(today.length) h+=`<div class="day-label">${t('group.today')}</div>`+today.sort(byDue).map(taskCardHTML).join('');
+  if(upcoming.length){
+    h+=`<div class="day-label">${t('group.upcoming')} · ${upcoming.length}</div>`;
+    // แบ่งย่อยตามวัน ให้กวาดตาดูง่ายว่าอันไหนพรุ่งนี้ อันไหนมะรืน
+    let lastKey='';
+    upcoming.forEach(x=>{
+      const d=x.dueAt.toDate(), k=dayKey(d);
+      if(k!==lastKey){ lastKey=k;
+        h+=`<div class="sub-day">${relDayLabel(d)}</div>`;
+      }
+      h+=taskCardHTML(x);
+    });
+  }
   if(noDate.length) h+=`<div class="day-label">${t('group.noDate')} · ${noDate.length}</div>`+noDate.map(taskCardHTML).join('');
+  // กลุ่มงานเสร็จวันนี้ — พับเก็บล่างสุด กดกางเพื่อดู
+  if(doneToday.length){
+    h+=`<button class="done-toggle ${doneExpanded?'open':''}" id="doneToggle">
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span>${t('group.doneToday')} · ${doneToday.length}</span></button>`;
+    if(doneExpanded) h+=`<div class="done-wrap">`+doneToday.map(taskCardHTML).join('')+`</div>`;
+  }
   if(!h) h=`<div class="empty"><div class="em-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
     <h3>${t('empty.title')}</h3><p>${t('empty.desc')}</p></div>`;
   $('#todayList').innerHTML=h;
@@ -1878,6 +1928,7 @@ function bindEvents(){
   setupMic('#micName','#edName'); setupMic('#micDetail','#edDetail');
 
   document.body.addEventListener('click',e=>{
+    const dt=e.target.closest('#doneToggle'); if(dt){ doneExpanded=!doneExpanded; renderToday(); return; }
     const c=e.target.closest('[data-cycle]'); if(c){ cycleStatus(c.dataset.cycle); return; }
     const o=e.target.closest('[data-open]'); if(o){ openEditor(o.dataset.open); return; }
     const d=e.target.closest('[data-day]'); if(d){ calCursor=new Date(d.dataset.day); calMode='week';
